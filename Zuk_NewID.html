@@ -1,0 +1,1287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZUK — Player One</title>
+<meta name="description" content="Meet Zuk: action and third-person gamer, part-time comedian, full-time Assassin's Creed devotee.">
+<meta property="og:title" content="ZUK — Player One">
+<meta property="og:description" content="Gamer. Part-time comedian. Full-time legend (self-declared).">
+<meta property="og:type" content="profile">
+<meta name="theme-color" content="#0d0b2b">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23ff5a6a' d='M1 0h3v1H1zM5 0h3v1H5zM0 1h9v3H0zM1 4h7v1H1zM2 5h5v1H2zM3 6h3v1H3zM4 7h1v1H4z'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  /* Flat colors only, no gradients. Same fonts as the original page. */
+  :root {
+    --night: #0d0b2b;
+    --night-2: #15123d;
+    --ink: #f4f1ff;
+    --muted: #b9b6e0;
+    --gold: #ffd34d;
+    --orange: #ff9a1f;
+    --rust: #b8481a;
+    --plum: #7e2553;
+    --pink: #ff6fae;
+    --teal: #5ff2d6;
+    --green: #2fe08a;
+    --win: #1d3592;
+    --win-edge: #e6ebff;
+    --win-inset: #0a1240;
+    --shadow: #05081f;
+    --cell-off: #16226a;
+    --cell-off-shade: #0c1446;
+    --deep: #05041a;
+    --plat-shadow: #5a7fb8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+  body {
+    background: var(--night);
+    color: var(--ink);
+    font-family: "VT323", monospace;
+    font-size: 24px;
+    line-height: 1.25;
+    overflow-x: hidden;
+  }
+  /* Pixel display font for titles and labels, as in the original */
+  nav .logo, nav a, .tag, h1, h2, h3, .btn, .sec-num, .id-head, .id-meta, .divider,
+  .rare, .badge, .sub-h, footer .end, .toast .t1 {
+    font-family: "Press Start 2P", monospace; font-weight: normal;
+  }
+  canvas.sprite { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 0 16px; }
+  a:focus-visible, button:focus-visible { outline: 3px solid var(--gold); outline-offset: 4px; }
+
+  /* Gold title text with a hard offset shadow */
+  .chrome { color: var(--gold); text-shadow: 3px 3px 0 var(--rust); }
+
+  /* JRPG-style menu window, flat fill */
+  .win {
+    position: relative;
+    background: var(--win);
+    border: 3px solid var(--win-edge);
+    border-radius: 10px;
+    box-shadow: inset 0 0 0 2px var(--win-inset), 0 0 0 2px var(--shadow), 0 8px 0 2px rgba(0,0,0,.4);
+  }
+
+  nav {
+    position: sticky; top: 0; z-index: 40;
+    background: var(--night);
+    border-bottom: 3px solid var(--win-edge);
+  }
+  nav .wrap { display: flex; justify-content: space-between; align-items: center; min-height: 60px; gap: 12px; }
+  nav .logo { font-size: 14px; display: flex; gap: 10px; align-items: center; flex: none; }
+  nav .links { display: flex; gap: 20px; overflow-x: auto; scrollbar-width: none; }
+  nav .links::-webkit-scrollbar { display: none; }
+  nav a { color: var(--muted); text-decoration: none; font-size: 10px; white-space: nowrap; padding: 8px 0; }
+  nav a:hover { color: var(--gold); }
+  nav a:hover::before { content: "▶ "; }
+  @media (max-width: 600px) {
+    nav .logo span { display: none; }
+    nav .links { gap: 14px; }
+    nav a { font-size: 9px; }
+  }
+
+  header.hero {
+    min-height: 90vh; display: grid; place-items: center; text-align: center;
+    position: relative; overflow: hidden; background: #2a1460;
+  }
+  #scene { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+  .hero-inner { position: relative; z-index: 2; padding: 40px 0 140px; }
+  .tag { color: var(--teal); font-size: 11px; line-height: 1.8; margin-bottom: 28px; text-shadow: 2px 2px 0 var(--shadow); }
+  h1.name {
+    font-size: clamp(64px, 18vw, 160px); line-height: 1;
+    text-shadow:
+      6px 0 0 var(--orange), 0 6px 0 var(--orange), 6px 6px 0 var(--orange),
+      12px 12px 0 var(--rust), 18px 18px 0 var(--shadow);
+    animation: bob 1s steps(2) infinite;
+  }
+  @keyframes bob { 50% { transform: translateY(-6px); } }
+  .subtitle { margin-top: 36px; font-size: clamp(24px, 3.4vw, 32px); text-shadow: 3px 3px 0 var(--shadow); }
+  .subtitle b { color: var(--teal); font-weight: normal; }
+  .intro { margin: 18px auto 0; max-width: 600px; padding: 12px 20px; font-size: clamp(22px, 2.8vw, 26px); text-align: left; }
+  /* Arcade-style button: notched pixel corners, bevel, physical press depth, blinking cursor */
+  .btn {
+    position: relative; display: inline-block; margin-top: 40px; text-decoration: none; color: #2b1300;
+    font-size: 13px; padding: 18px 28px 18px 46px; background: var(--gold);
+    box-shadow:
+      inset 0 4px 0 #fff1a8, inset 0 -4px 0 var(--orange), inset 4px 0 0 #ffe27a, inset -4px 0 0 #e9a92a,
+      0 -4px 0 var(--shadow), 0 4px 0 var(--shadow), -4px 0 0 var(--shadow), 4px 0 0 var(--shadow),
+      0 12px 0 var(--rust), 4px 8px 0 var(--shadow), -4px 8px 0 var(--shadow), 0 16px 0 var(--shadow);
+    transition: transform .06s steps(1);
+  }
+  .btn::before {
+    content: "▶"; position: absolute; left: 18px; top: 50%; transform: translateY(-50%);
+    animation: nudge .6s steps(2) infinite;
+  }
+  .btn .label { animation: blink 1s steps(1) 4; }
+  .btn:hover { background: #ffe27a; }
+  .btn:active {
+    transform: translateY(10px);
+    box-shadow:
+      inset 0 4px 0 var(--orange), inset 0 -4px 0 #fff1a8,
+      0 -4px 0 var(--shadow), 0 4px 0 var(--shadow), -4px 0 0 var(--shadow), 4px 0 0 var(--shadow), 0 6px 0 var(--shadow);
+  }
+  @keyframes nudge { 50% { transform: translate(4px, -50%); } }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  section { padding: 96px 0; }
+  section:nth-of-type(odd) { background: var(--night); }
+  section:nth-of-type(even) { background: var(--night-2); }
+  .sec-head { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+  .sec-num { font-size: 12px; padding: 8px 10px; color: var(--ink); }
+  h2 { font-size: clamp(14px, 3vw, 20px); line-height: 1.5; }
+  .lede { color: var(--muted); margin-bottom: 40px; }
+
+  .card { padding: 24px; transition: transform .15s steps(2); }
+  .card:hover { transform: translate(-3px, -3px); }
+
+  /* Player ID card */
+  .profile { display: grid; gap: 32px; }
+  .id-head { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-bottom: 20px; }
+  .id-head b { color: var(--gold); font-weight: normal; }
+  /* Portrait on the left, short description on the right (kept side by side on phones too) */
+  .id-body { display: grid; grid-template-columns: auto 1fr; gap: 32px; align-items: center; }
+  .photo { height: 360px; display: flex; align-items: center; }
+  /* Same flat gold and hard orange/rust shadow as the ZUK title */
+  .photo svg {
+    height: 100%; width: auto; shape-rendering: crispEdges;
+    filter: drop-shadow(3px 3px 0 var(--orange)) drop-shadow(3px 3px 0 var(--rust));
+  }
+  @media (max-width: 640px) {
+    .id-body { gap: 18px; align-items: start; }
+    .photo { height: 230px; }
+    .bio { font-size: 21px !important; }
+  }
+  .id-meta { margin-top: 22px; display: grid; grid-template-columns: auto 1fr; gap: 10px 14px; font-size: 10px; line-height: 1.6; align-items: center; }
+  .id-meta dt { color: var(--muted); }
+  .id-meta dd { color: var(--gold); }
+  .lives { display: flex; gap: 6px; align-items: center; }
+  .lives canvas { width: 22px; height: 20px; }
+
+  .bio { font-size: 26px; }
+  .bio b { color: var(--teal); font-weight: normal; }
+  .bio + .bio { margin-top: 14px; }
+
+  /* Skill meters, built like HP bars: 20 cells (5 points each) that light up one by one.
+     Low scores turn red and the last cell blinks, like a low-health warning. */
+  .divider { margin-bottom: 24px; font-size: 14px; color: var(--pink); }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px 44px; }
+  .stat-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 26px; }
+  .stat-row b { color: var(--gold); font-weight: normal; }
+  .stat-row b small { color: var(--muted); font-size: 20px; }
+  .bar {
+    display: flex; gap: 2px; height: 22px; margin: 6px 4px 6px; padding: 3px; background: var(--shadow);
+    box-shadow:
+      0 -3px 0 var(--win-edge), 0 3px 0 var(--win-edge), -3px 0 0 var(--win-edge), 3px 0 0 var(--win-edge),
+      0 -6px 0 var(--shadow), 0 6px 0 var(--shadow), -6px 0 0 var(--shadow), 6px 0 0 var(--shadow);
+  }
+  .cell { flex: 1; background: var(--cell-off); box-shadow: inset 0 -3px 0 var(--cell-off-shade); }
+  .cell.on { background: var(--gold); box-shadow: inset 0 3px 0 #fff1a8, inset 0 -3px 0 var(--rust); }
+  .bar.low .cell.on { background: #ff4a5e; box-shadow: inset 0 3px 0 #ffb3bb, inset 0 -3px 0 #8a0f24; }
+  .bar.low .cell.tip { animation: blink .5s steps(1) infinite; }
+  .stat.low .stat-row b { color: #ff4a5e; }
+  /* Zuk Mode: lit cells cycle through flat colors (values stay as they are) */
+  body.zuk-mode .bar .cell.on { animation: rainbow .8s steps(1) infinite; animation-delay: calc(var(--i) * -40ms); }
+  @keyframes rainbow {
+    0% { background: #ff4a5e; } 20% { background: var(--orange); } 40% { background: var(--gold); }
+    60% { background: var(--green); } 80% { background: #4fb8ff; }
+  }
+
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 32px; }
+  .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 32px; }
+  .ach { display: flex; gap: 18px; align-items: flex-start; }
+  .ach canvas { width: 54px; height: 54px; flex: none; }
+  .ach h3 { font-size: 11px; line-height: 1.5; color: var(--gold); margin-bottom: 10px; }
+  .ach p { font-size: 22px; }
+  .ach .rare { display: inline-block; margin-top: 10px; font-size: 9px; line-height: 1.5; color: var(--teal); }
+  .about h3 { color: var(--teal); }
+
+  .game { text-align: center; }
+  .game canvas { width: 104px; height: 104px; margin: 0 auto; }
+  .game h3 { margin: 18px 0 10px; font-size: 12px; line-height: 1.6; }
+  .game p { font-size: 22px; }
+  /* Pixel tags with notched corners and a bevel */
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px; margin-top: 18px; font-size: 9px; line-height: 1;
+    padding: 8px 10px; color: #062a1c; background: var(--green);
+    box-shadow:
+      inset 0 2px 0 #9dffc9, inset 0 -2px 0 #128a52,
+      0 -3px 0 var(--shadow), 0 3px 0 var(--shadow), -3px 0 0 var(--shadow), 3px 0 0 var(--shadow), 0 6px 0 var(--shadow);
+  }
+  .badge.gold { color: #2b1300; background: var(--gold); box-shadow: inset 0 2px 0 #fff1a8, inset 0 -2px 0 var(--rust), 0 -3px 0 var(--shadow), 0 3px 0 var(--shadow), -3px 0 0 var(--shadow), 3px 0 0 var(--shadow), 0 6px 0 var(--shadow); }
+  /* "Now playing" gets a blinking record light */
+  .badge.live::before { content: ""; width: 6px; height: 6px; background: #ff004d; box-shadow: 0 0 0 2px var(--shadow); animation: blink 1s steps(1) infinite; }
+  .sub-h { font-size: 12px; line-height: 1.6; color: var(--pink); margin: 56px 0 24px; }
+
+  .fav { display: grid; grid-template-columns: auto 1fr; gap: 28px; align-items: center; padding: 30px; }
+  .fav canvas { width: 120px; height: 120px; }
+  .fav h3 { font-size: 16px; line-height: 1.5; margin-bottom: 14px; }
+  .fav blockquote { font-size: clamp(28px, 4vw, 38px); line-height: 1.1; }
+  .fav blockquote::before { content: "“"; color: var(--gold); }
+  .fav blockquote::after { content: "”"; color: var(--gold); }
+  .fav .hours { margin-top: 10px; color: var(--muted); }
+  @media (max-width: 560px) { .fav { grid-template-columns: 1fr; text-align: center; } .fav canvas { margin: 0 auto; } }
+
+  /* Platinum trophy counter: number ticks up, trophies on the shelf light up one by one */
+  .plat-card { display: grid; grid-template-columns: auto 1fr; gap: 36px; align-items: center; padding: 32px; }
+  .plat-card > canvas { width: 140px; height: 165px; }
+  .plat-count { font-family: "Press Start 2P", monospace; font-size: clamp(56px, 11vw, 96px); line-height: 1; color: #eaf6ff; text-shadow: 4px 4px 0 var(--plat-shadow), 8px 8px 0 var(--shadow); }
+  .plat-count span { display: inline-block; }
+  .plat-count span.pop { animation: pop .12s steps(2); }
+  @keyframes pop { 50% { transform: scale(1.18); } }
+  .plat-label { font-family: "Press Start 2P", monospace; font-size: 11px; line-height: 1.6; color: var(--teal); margin: 18px 0 20px; }
+  .plat-shelf { display: flex; flex-wrap: wrap; gap: 8px; }
+  .plat-shelf canvas { width: 24px; height: 28px; opacity: .22; filter: grayscale(1) brightness(.6); }
+  .plat-shelf canvas.lit { opacity: 1; filter: none; animation: pop .2s steps(2); }
+  @media (max-width: 560px) {
+    .plat-card { grid-template-columns: 1fr; text-align: center; justify-items: center; }
+    .plat-shelf { justify-content: center; }
+  }
+
+  footer { padding: 60px 0; text-align: center; background: var(--deep); border-top: 3px solid var(--win-edge); color: var(--muted); }
+  footer .end { font-size: 14px; line-height: 1.6; margin-bottom: 16px; }
+  footer p { display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; }
+  footer canvas { width: 22px; height: 20px; }
+  footer .hint { margin-top: 16px; font-size: 20px; opacity: .6; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translate(-50%, 200%);
+    padding: 12px 20px; display: flex; gap: 14px; align-items: center; z-index: 60;
+    transition: transform .3s steps(4), visibility .3s; max-width: calc(100% - 32px); visibility: hidden;
+  }
+  .toast.show { transform: translate(-50%, 0); visibility: visible; }
+  .toast canvas { width: 36px; height: 36px; }
+  .toast .t1 { font-size: 9px; color: var(--teal); margin-bottom: 6px; }
+  .toast .t2 { font-size: 24px; }
+
+  /* Cheat code effects */
+  .flash { position: fixed; inset: 0; z-index: 80; background: #fff; pointer-events: none; animation: flash .45s steps(3) forwards; }
+  @keyframes flash { to { opacity: 0; } }
+  /* shake the page content, not <body>, so fixed overlays stay pinned to the screen */
+  body.shake > nav, body.shake > header, body.shake > section, body.shake > footer { animation: shake .5s steps(8); }
+  @keyframes shake {
+    0%, 100% { transform: none; } 12% { transform: translate(-8px, 4px); } 25% { transform: translate(8px, -4px); }
+    37% { transform: translate(-6px, -6px); } 50% { transform: translate(6px, 6px); } 62% { transform: translate(-4px, 2px); }
+    75% { transform: translate(4px, -2px); } 87% { transform: translate(-2px, 0); }
+  }
+  .rain { position: fixed; inset: 0; z-index: 70; pointer-events: none; overflow: hidden; }
+  .rain canvas { position: absolute; top: -60px; animation: fall var(--d) steps(30) var(--delay) forwards; }
+  @keyframes fall { to { transform: translateY(calc(100vh + 120px)) rotate(var(--r)); } }
+  .cheat {
+    position: fixed; left: 50%; top: 50%; z-index: 75; transform: translate(-50%, -50%) scale(0);
+    padding: 28px 32px; text-align: center; width: min(560px, calc(100% - 32px));
+    transition: transform .3s steps(4);
+  }
+  .cheat.show { transform: translate(-50%, -50%) scale(1); }
+  .cheat .big { font-family: "Press Start 2P", monospace; font-size: clamp(16px, 4vw, 26px); line-height: 1.5; color: var(--gold); text-shadow: 3px 3px 0 var(--rust); animation: blink .4s steps(1) 6; }
+  .cheat .small { font-family: "Press Start 2P", monospace; font-size: 10px; line-height: 2; color: var(--teal); margin-top: 14px; }
+  body.zuk-mode h1.name { animation: bob 1s steps(2) infinite, titleCycle .8s steps(1) infinite; }
+  @keyframes titleCycle { 0% { color: var(--gold); } 25% { color: var(--teal); } 50% { color: var(--pink); } 75% { color: var(--green); } }
+
+  /* ---------- Zuk Mode (cheat code) ---------- */
+  /* Palette swaps from blue to dark purple */
+  body.zuk-mode {
+    --night: #13061c; --night-2: #1d0a2a; --win: #3b1658; --win-inset: #1e0830; --win-edge: #f3dcff;
+    --shadow: #0c0312; --cell-off: #2c0f42; --cell-off-shade: #1a0629; --deep: #0a0210;
+    --muted: #cdb4e6; --pink: #ff7ad9; --teal: #7dffd0; --plat-shadow: #8a5fb8;
+  }
+  body.zuk-mode header.hero { background: #1d0a2a; }
+  /* Lives keep their count but cycle colors */
+  body.zuk-mode .lives canvas { animation: hueCycle .8s steps(5) infinite; }
+  body.zuk-mode .lives canvas:nth-child(2) { animation-delay: -.16s; }
+  body.zuk-mode .lives canvas:nth-child(3) { animation-delay: -.32s; }
+  @keyframes hueCycle { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }
+  /* Portrait cycles colors row by row, like the skill bars */
+  body.zuk-mode .photo svg > rect, body.zuk-mode .photo svg > path {
+    animation: rainbowFill .8s steps(1) infinite; animation-delay: calc(var(--i) * -25ms);
+  }
+  @keyframes rainbowFill {
+    0% { fill: #ff4a5e; } 20% { fill: var(--orange); } 40% { fill: var(--gold); }
+    60% { fill: var(--green); } 80% { fill: #4fb8ff; }
+  }
+  /* Glint in the eye */
+  .photo .glint { opacity: 0; transform-box: fill-box; transform-origin: center; }
+  body.zuk-mode .photo .glint { animation: glint 2.4s steps(1) infinite; }
+  @keyframes glint {
+    0%, 66%, 100% { opacity: 0; transform: scale(.4); }
+    70% { opacity: .7; transform: scale(.7); } 76% { opacity: 1; transform: scale(1); } 84% { opacity: .6; transform: scale(.6); }
+  }
+  /* Faint scanlines, plus short glitch bursts */
+  body.zuk-mode::after {
+    content: ""; position: fixed; inset: 0; z-index: 64; pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,.14) 0 1px, transparent 1px 3px);
+  }
+  body.glitching > nav, body.glitching > header, body.glitching > section, body.glitching > footer { animation: glitchJitter .18s steps(3); }
+  @keyframes glitchJitter { 0% { transform: translateX(-3px); } 33% { transform: translate(3px, 1px); } 66% { transform: translateX(-1px); } }
+  body.glitching h2, body.glitching .stat-row, body.glitching .bio { text-shadow: -2px 0 0 #ff2bd6, 2px 0 0 #2bffe6; }
+  .glitch-bars { position: fixed; inset: 0; z-index: 66; pointer-events: none; }
+  .glitch-bars i { position: absolute; left: 0; right: 0; opacity: .35; }
+  /* Fireworks layer */
+  .fireworks { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 65; pointer-events: none; image-rendering: pixelated; }
+  /* Dismiss button, pinned to the bottom of the screen while Zuk Mode is on */
+  .dismiss {
+    display: none; position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 85;
+    font-family: "Press Start 2P", monospace; font-size: 11px; color: #2a0420; cursor: pointer; border: 0;
+    padding: 14px 18px 14px 38px; background: var(--pink); white-space: nowrap;
+    box-shadow:
+      inset 0 4px 0 #ffc2ee, inset 0 -4px 0 #b8338f,
+      0 -4px 0 var(--shadow), 0 4px 0 var(--shadow), -4px 0 0 var(--shadow), 4px 0 0 var(--shadow),
+      0 10px 0 #7a1a5e, 0 14px 0 var(--shadow);
+  }
+  .dismiss::before { content: "✕"; position: absolute; left: 15px; top: 50%; transform: translateY(-50%); }
+  .dismiss:hover { background: #ffa3e6; }
+  .dismiss:active { transform: translate(-50%, 8px); box-shadow: 0 -4px 0 var(--shadow), 0 4px 0 var(--shadow), -4px 0 0 var(--shadow), 4px 0 0 var(--shadow); }
+  body.zuk-mode .dismiss { display: inline-block; }
+  body.zuk-mode .toast { bottom: 100px; }
+  body.zuk-mode footer { padding-bottom: 130px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<nav aria-label="Main">
+  <div class="wrap">
+    <div class="logo"><canvas class="sprite" id="logoPad" data-sprite="controller" style="width:34px;height:34px;cursor:pointer"></canvas><span class="chrome">ZUK.EXE</span></div>
+    <div class="links">
+      <a href="#profile">PROFILE</a>
+      <a href="#about">ABOUT</a>
+      <a href="#achievements">TROPHIES</a>
+      <a href="#platinum">PLATINUM</a>
+      <a href="#games">GAMES</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <canvas id="scene" aria-hidden="true"></canvas>
+  <div class="hero-inner wrap">
+    <div class="tag">PLAYER 1 HAS ENTERED THE GAME</div>
+    <h1 class="name chrome">ZUK</h1>
+    <p class="subtitle">Gamer. Part-time comedian. <b>Full-time legend</b> (self-declared).</p>
+    <p class="intro win">Hi, I'm Zuk. I lose myself in big action games, I find the joke in everything, and I'm happiest exploring a world at my own pace.</p>
+    <a href="#profile" class="btn"><span class="label">PRESS START</span></a>
+  </div>
+</header>
+
+<section id="profile">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num win">01</span><h2 class="chrome">PLAYER PROFILE</h2></div>
+    <p class="lede">The short version, for anyone meeting me for the first time.</p>
+    <div class="profile">
+      <div class="win card">
+        <div class="id-head"><span>PLAYER ID</span><b>No. 001</b></div>
+        <div class="id-body">
+        <div class="photo">
+          <!-- ID photo: contents of Pixel_side.svg, embedded so the page works on its own -->
+          <svg class="pix" role="img" aria-label="Pixel-art side portrait of Zuk" viewBox="0 0 179 501" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect x="130" y="22" width="30" height="10" fill="#ffd34d"/>
+<rect x="107" y="32" width="53" height="10" fill="#ffd34d"/>
+<rect x="95" y="42" width="65" height="10" fill="#ffd34d"/>
+<rect x="77" y="52" width="83" height="10" fill="#ffd34d"/>
+<rect x="59" y="62" width="101" height="10" fill="#ffd34d"/>
+<rect x="47" y="72" width="113" height="10" fill="#ffd34d"/>
+<rect x="41" y="82" width="119" height="10" fill="#ffd34d"/>
+<rect x="41" y="92" width="108" height="10" fill="#ffd34d"/>
+<rect x="41" y="102" width="42" height="10" fill="#ffd34d"/>
+<rect x="34" y="112" width="42" height="10" fill="#ffd34d"/>
+<rect x="23" y="122" width="42" height="10" fill="#ffd34d"/>
+<rect x="17" y="132" width="37" height="10" fill="#ffd34d"/>
+<rect x="17" y="142" width="30" height="10" fill="#ffd34d"/>
+<rect x="17" y="152" width="30" height="10" fill="#ffd34d"/>
+<rect x="17" y="162" width="30" height="10" fill="#ffd34d"/>
+<path d="M17 172H40V182H17V172Z" fill="#ffd34d"/>
+<path d="M64 172H122V182H64V172Z" fill="#ffd34d"/>
+<path d="M17 182H34V192H17V182Z" fill="#ffd34d"/>
+<path d="M58.5 182H131V192H58.5V182Z" fill="#ffd34d"/>
+<path d="M17 192H27V202H17V192Z" fill="#ffd34d"/>
+<path d="M52.5 192H147V202H52.5V192Z" fill="#ffd34d"/>
+<path d="M17 202H77V212H17V202Z" fill="#ffd34d"/>
+<path d="M82.5 202H147V212H82.5V202Z" fill="#ffd34d"/>
+<path d="M17 212H70V222H17V212Z" fill="#ffd34d"/>
+<path d="M82.5 212H107V222H82.5V212Z" fill="#ffd34d"/>
+<path d="M118.5 212H147V222H118.5V212Z" fill="#ffd34d"/>
+<path d="M17 222.003H58V232.003H17V222.003Z" fill="#ffd34d"/>
+<path d="M89 222.003H100V232.003H89V222.003Z" fill="#ffd34d"/>
+<path d="M130.5 222H147V232H130.5V222Z" fill="#ffd34d"/>
+<path d="M17 232H48V242H17V232Z" fill="#ffd34d"/>
+<path d="M130.5 232H147V242H130.5V232Z" fill="#ffd34d"/>
+<path d="M17 242H40V252H17V242Z" fill="#ffd34d"/>
+<path d="M124 242H147V252H124V242Z" fill="#ffd34d"/>
+<path d="M17 252H34V262H17V252Z" fill="#ffd34d"/>
+<path d="M118 252H147V262H118V252Z" fill="#ffd34d"/>
+<path d="M17 262H27V272H17V262Z" fill="#ffd34d"/>
+<path d="M112.5 262H142V272H112.5V262Z" fill="#ffd34d"/>
+<path d="M17 272H22V282H17V272Z" fill="#ffd34d"/>
+<path d="M118 272H132V282H118V272Z" fill="#ffd34d"/>
+<path d="M17 282H22V292H17V282Z" fill="#ffd34d"/>
+<path d="M125.5 282H130.5V292H125.5V282Z" fill="#ffd34d"/>
+<path d="M17 292H22V302H17V292Z" fill="#ffd34d"/>
+<path d="M130.5 292H143V302H130.5V292Z" fill="#ffd34d"/>
+<rect x="17" y="302" width="5" height="10" fill="#ffd34d"/>
+<path d="M17 312H22V322H17V312Z" fill="#ffd34d"/>
+<path d="M87 312H160V322H87V312Z" fill="#ffd34d"/>
+<path d="M17 322H27V332H17V322Z" fill="#ffd34d"/>
+<path d="M74 322H160V332H74V322Z" fill="#ffd34d"/>
+<path d="M17 332.001H35V342.001H17V332.001Z" fill="#ffd34d"/>
+<path d="M65 332.001L100 332V342L65 342.001V332.001Z" fill="#ffd34d"/>
+<path d="M17 342H42V352H17V342Z" fill="#ffd34d"/>
+<path d="M65 342H90V352H65V342Z" fill="#ffd34d"/>
+<rect x="17" y="352" width="65" height="10" fill="#ffd34d"/>
+<rect x="17" y="361" width="65" height="10" fill="#ffd34d"/>
+<path d="M17 371H82V381H17V371Z" fill="#ffd34d"/>
+<path d="M116 371H161V381H116V371Z" fill="#ffd34d"/>
+<path d="M22 381H92V391H22V381Z" fill="#ffd34d"/>
+<path d="M106 381H161V391H106V381Z" fill="#ffd34d"/>
+<rect x="22" y="391" width="100" height="10" fill="#ffd34d"/>
+<rect x="27" y="401" width="90" height="10" fill="#ffd34d"/>
+<rect x="32" y="411" width="100" height="10" fill="#ffd34d"/>
+<rect x="42" y="421" width="119" height="10" fill="#ffd34d"/>
+<rect x="58" y="431" width="103" height="10" fill="#ffd34d"/>
+<rect x="66" y="441" width="95" height="10" fill="#ffd34d"/>
+<rect x="76" y="451" width="85" height="10" fill="#ffd34d"/>
+<rect x="86" y="461" width="75" height="10" fill="#ffd34d"/>
+<rect x="106" y="471" width="55" height="10" fill="#ffd34d"/>
+<!-- eye glint, only shown in Zuk Mode -->
+<g class="glint" fill="#ffffff">
+  <rect x="96" y="200" width="6" height="26"/>
+  <rect x="86" y="210" width="26" height="6"/>
+  <rect x="93" y="207" width="12" height="12"/>
+</g>
+</svg>
+        </div>
+        <div>
+          <p class="bio">
+            I'm <b>Zuk</b>. I'm into big action and third-person games, the kind with a world
+            worth getting lost in, and I've spent more hours in <b>Assassin's Creed</b> than
+            I'd like to admit.
+          </p>
+          <p class="bio">
+            Outside the game I'm usually the one making the room laugh. I don't take myself
+            too seriously, but I take my stories, my snacks and my save files very seriously.
+          </p>
+          <dl class="id-meta">
+            <dt>NAME</dt><dd>ZUK</dd>
+            <dt>CLASS</dt><dd>GAMER / JOKER</dd>
+            <dt>LEVEL</dt><dd id="level">99</dd>
+            <dt>GENRE</dt><dd>ACTION / 3RD PERSON</dd>
+            <dt>LIVES</dt>
+            <dd class="lives" aria-label="2 of 3 lives left">
+              <canvas class="sprite" data-sprite="heart"></canvas>
+              <canvas class="sprite" data-sprite="heart"></canvas>
+              <canvas class="sprite" data-sprite="heartEmpty"></canvas>
+            </dd>
+          </dl>
+        </div>
+        </div>
+      </div>
+      <div class="win card">
+        <div class="divider">SKILL TREE</div>
+        <div class="stats">
+          <div class="stat"><div class="stat-row"><span>Assassin's Creed</span><b>95<small>/100</small></b></div><div class="bar"><i data-w="95"></i></div></div>
+          <div class="stat"><div class="stat-row"><span>Dark Humor</span><b>92<small>/100</small></b></div><div class="bar"><i data-w="92"></i></div></div>
+          <div class="stat"><div class="stat-row"><span>UI</span><b>90<small>/100</small></b></div><div class="bar"><i data-w="90"></i></div></div>
+          <div class="stat"><div class="stat-row"><span>Curiosity</span><b>88<small>/100</small></b></div><div class="bar"><i data-w="88"></i></div></div>
+          <div class="stat"><div class="stat-row"><span>Gaming</span><b>85<small>/100</small></b></div><div class="bar"><i data-w="85"></i></div></div>
+          <div class="stat"><div class="stat-row"><span>Crunch</span><b>85<small>/100</small></b></div><div class="bar"><i data-w="85"></i></div></div>
+          <div class="stat"><div class="stat-row"><span>Snack Consumption</span><b>90<small>/100</small></b></div><div class="bar"><i data-w="90"></i></div></div>
+          <div class="stat"><div class="stat-row"><span>Sleep Schedule</span><b>25<small>/100</small></b></div><div class="bar"><i data-w="25"></i></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="about">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num win">02</span><h2 class="chrome">WHAT I'M ABOUT</h2></div>
+    <p class="lede">The things that make me, me.</p>
+    <div class="grid2">
+      <div class="win card ach about"><canvas class="sprite" data-sprite="book"></canvas><div><h3>STORIES FIRST</h3><p>Give me a good plot and a big world and I'm gone for the weekend.</p></div></div>
+      <div class="win card ach about"><canvas class="sprite" data-sprite="star"></canvas><div><h3>ALWAYS JOKING</h3><p>If there's a joke to be found, I'll find it. Usually at the worst possible moment.</p></div></div>
+      <div class="win card ach about"><canvas class="sprite" data-sprite="key"></canvas><div><h3>CURIOUS BY DEFAULT</h3><p>Every locked door, every hidden path. If it's there, I want to know what's behind it.</p></div></div>
+      <div class="win card ach about"><canvas class="sprite" data-sprite="hourglass"></canvas><div><h3>AT MY OWN PACE</h3><p>No rush, no pressure. I take my time and enjoy the ride.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="achievements">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num win">03</span><h2 class="chrome">ACHIEVEMENTS</h2></div>
+    <p class="lede">Some of these may be slightly exaggerated.</p>
+    <div class="grid3">
+      <div class="win card ach"><canvas class="sprite" data-sprite="haystack"></canvas><div><h3>LEAP OF FAITH</h3><p>Jumped off every tall tower in every Assassin's Creed. Always found the haystack.</p><span class="rare">0.1% OF PLAYERS</span></div></div>
+      <div class="win card ach"><canvas class="sprite" data-sprite="moon"></canvas><div><h3>NIGHT OWL</h3><p>"Just one more save point" at 11pm. It's now 5am.</p><span class="rare">COMMON (FOR ZUK)</span></div></div>
+      <div class="win card ach"><canvas class="sprite" data-sprite="controller"></canvas><div><h3>CONTROLLER SURVIVOR</h3><p>Lost to the same boss 30 times. The controller survived. Character growth.</p><span class="rare">ULTRA RARE</span></div></div>
+      <div class="win card ach"><canvas class="sprite" data-sprite="pizza"></canvas><div><h3>ONE-HANDED HERO</h3><p>Beat a boss with one hand while eating pizza with the other.</p><span class="rare">2% OF PLAYERS</span></div></div>
+      <div class="win card ach"><canvas class="sprite" data-sprite="scroll"></canvas><div><h3>SIDE QUEST ADDICT</h3><p>60 hours in. Main story: 12% complete.</p><span class="rare">LEGENDARY</span></div></div>
+      <div class="win card ach"><canvas class="sprite" data-sprite="camera"></canvas><div><h3>PHOTO MODE PRO</h3><p>Spent longer framing the sunset than fighting the final boss.</p><span class="rare">0.5% OF PLAYERS</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="platinum">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num win">04</span><h2 class="chrome">PLATINUM TROPHIES</h2></div>
+    <p class="lede">Every trophy in the game, collected. Not one skipped.</p>
+    <div class="win plat-card" aria-label="19 platinum trophies earned">
+      <canvas class="sprite" data-sprite="plat"></canvas>
+      <div>
+        <div class="plat-count" aria-hidden="true"><span id="platNum">0</span></div>
+        <div class="plat-label">PLATINUMS EARNED</div>
+        <div class="plat-shelf" id="platShelf" aria-hidden="true"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="games">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num win">05</span><h2 class="chrome">GAMES</h2></div>
+    <p class="lede">Ask me about any of these and I won't stop talking.</p>
+    <div class="grid3">
+      <div class="win card game"><canvas class="sprite" data-sprite="pyramid"></canvas><h3>CONTROL RESONANT</h3><p>Bending reality. Still can't bend my sleep schedule.</p><span class="badge live">NOW PLAYING</span></div>
+      <div class="win card game"><canvas class="sprite" data-sprite="dawn"></canvas><h3>THE BLOOD OF DAWNWALKER</h3><p>Vampires, hard choices, zero daylight.</p><span class="badge gold">80+ HOURS</span></div>
+      <div class="win card game"><canvas class="sprite" data-sprite="desert"></canvas><h3>CRIMSON DESERT</h3><p>Open world, giant bosses, zero chill.</p><span class="badge gold">200+ HOURS</span></div>
+      <div class="win card game"><canvas class="sprite" data-sprite="axe"></canvas><h3>GOD OF WAR RAGNAROK</h3><p>Norse gods, a frozen axe, and a lot of dad energy.</p><span class="badge gold">150+ HOURS</span></div>
+      <div class="win card game"><canvas class="sprite" data-sprite="monolith"></canvas><h3>CLAIR OBSCUR: EXPEDITION 33</h3><p>Beautiful, brutal, and the best parry I've ever missed.</p><span class="badge gold">100+ HOURS</span></div>
+    </div>
+    <h3 class="sub-h">ALL-TIME FAVORITE</h3>
+    <div class="win fav">
+      <canvas class="sprite" data-sprite="hood" role="img" aria-label="Hooded assassin"></canvas>
+      <div>
+        <h3 class="chrome">ASSASSIN'S CREED</h3>
+        <blockquote>Nothing is true, everything is permitted.</blockquote>
+        <p class="hours">Over 1,000 hours across the whole series.</p>
+        <span class="badge gold">1000+ HOURS</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="end chrome">GAME OVER? NEVER.</div>
+    <p>Made with <canvas class="sprite" data-sprite="heart" role="img" aria-label="love"></canvas> by Zuk.</p>
+    <p class="hint">Psst: there's a cheat code. ↑↑↓↓←→←→BA (on a phone, tap the controller in the top bar 5 times)</p>
+  </div>
+</footer>
+
+<div class="cheat win" id="cheat" role="alert"><div class="big">CHEAT ACTIVATED</div><div class="small">ZUK MODE ON<br>RAINBOW STATS · FIREWORKS · GLITCHES</div></div>
+<button class="dismiss" id="dismiss" type="button">DISMISS ZUK MODE</button>
+<div class="toast win" id="toast" role="status" aria-live="polite"><canvas class="sprite" data-sprite="star"></canvas><div><div class="t1">ACHIEVEMENT UNLOCKED</div><div class="t2" id="toastText"></div></div></div>
+
+<script>
+  // Sprite palette: several shades per color so icons look shaded, 32-bit style
+  const PAL = {
+    k: "#14101f", w: "#ffffff", W: "#d9dbe8", g: "#9a9db5", G: "#5a5d78",
+    y: "#ffe680", Y: "#f5b62a", o: "#d9771f",
+    r: "#ff5a6a", R: "#d11f3f", m: "#7a0f26",
+    b: "#8fdcff", B: "#3b8ff0", n: "#1d4fae",
+    e: "#c98a4b", E: "#8a5426", c: "#fff3c4", s: "#ffd4b0",
+    d: "#e8b46a", D: "#b97a3a", X: "#2a2a3a", x: "#07070d", h: "#2a2f5a",
+    A: "#dfe9f8", Q: "#a9bcd9", Z: "#6f82a8", J: "#140f3c", K: "#3a2a8a", L: "#6a8cff",
+    U: "#1b3fa8", O: "#2f6fe0", V: "#5aa6ff", I: "#a8dcff", H: "#f0faff"
+  };
+  const OUTLINE = [20, 16, 31];
+
+  const SPRITES = {
+    controller: [
+      "................",
+      "................",
+      "................",
+      "...gggggggggg...",
+      "..gWWWWWWWWWWg..",
+      ".gWWkWWWWWWyWWg.",
+      ".gWkkkWWWWbWrWg.",
+      ".gWWkWWWWWWBWWg.",
+      ".gWWWWWkkWWWWWg.",
+      ".gWWWWggggWWWWg.",
+      ".gWWWgg..ggWWWg.",
+      ".gWWgg....ggWWg.",
+      "..ggg......ggg..",
+      "................",
+      "................",
+      "................"
+    ],
+    heart: [
+      ".rrr.rrr.",
+      "rwrrrrrrR",
+      "rrrrrrrrR",
+      "rrrrrrrRR",
+      ".rrrrrRR.",
+      "..rrrRR..",
+      "...rRR...",
+      "....R...."
+    ],
+    // A lost life: hollow heart outline
+    heartEmpty: [
+      ".ggg.ggg.",
+      "ghhhghhhg",
+      "ghhhhhhhg",
+      "ghhhhhhhg",
+      ".ghhhhhg.",
+      "..ghhhg..",
+      "...ghg...",
+      "....g...."
+    ],
+    book: [
+      "................",
+      "................",
+      "..mRRRRRRRRRRR..",
+      "..mRrrrrrrrrrR..",
+      "..mRrYYYYYYrrR..",
+      "..mRrYrrrrYrrR..",
+      "..mRrYYYYYYrrR..",
+      "..mRrrrrrrrrrR..",
+      "..mRrrrrrrrrrR..",
+      "..mRrrrYYrrrrR..",
+      "..mRrrrrrrrrrR..",
+      "..mRRRRRRRRRRR..",
+      "..mWWWWWWWWWWW..",
+      "..mmmmmmmmmmmm..",
+      "................",
+      "................"
+    ],
+    star: [
+      ".......yy.......",
+      ".......yy.......",
+      "......yyyY......",
+      "......yyyY......",
+      ".....yyyyYY.....",
+      "yyyyyyyyyYYYYYYo",
+      ".yyyyyyyyYYYYYo.",
+      "..yyyykyyYkYYo..",
+      "...yyyyyyYYYo...",
+      "....yykkkYYo....",
+      "....yyyyYYYo....",
+      "...yyyyo.YYYo...",
+      "...yyyo...YYo...",
+      "..yyo......Yo...",
+      "..yo.........o..",
+      "................"
+    ],
+    key: [
+      "................",
+      "................",
+      "................",
+      "................",
+      "..yyyy..........",
+      ".yY..Yy.........",
+      "yY....Yyyyyyyyyy",
+      "yY....YYYYYYYYYo",
+      ".yY..Yo...oY.oY.",
+      "..oooo....oo..o.",
+      "................",
+      "................"
+    ],
+    hourglass: [
+      "................",
+      "..EEEEEEEEEEEE..",
+      "...bwwwwwwwwb...",
+      "...byyyyyyyyb...",
+      "....byyyyyyb....",
+      ".....byyyyb.....",
+      "......byyb......",
+      ".......bb.......",
+      "......bwyb......",
+      ".....bwwyyb.....",
+      "....bwwwyyyb....",
+      "...bwwyyyyyyb...",
+      "...byyyyyyyyb...",
+      "..EEEEEEEEEEEE..",
+      "................",
+      "................"
+    ],
+    haystack: [
+      "................",
+      "................",
+      "................",
+      "................",
+      "......y.y.......",
+      "....yyYyYyy.....",
+      "...yYyyYyyYy....",
+      "..yyYyYyyYyYy...",
+      "..yYyyYyyyYyyy..",
+      ".yyYyYyyYyyYyYy.",
+      ".yYyyYyyYyyYyyy.",
+      "yyYyyYyYyyYyYyyY",
+      "yYoyYoyYoyYoyYoy",
+      "oooooooooooooooo",
+      "EEEEEEEEEEEEEEEE",
+      "................"
+    ],
+    moon: [
+      "................",
+      ".....yyyy.......",
+      "...yyyYYo.......",
+      "..yyYYo.........",
+      ".yyYYo..........",
+      ".yYYo.......w...",
+      "yyYo.......www..",
+      "yyYo........w...",
+      "yyYo............",
+      "yyYo............",
+      "yyYYo...........",
+      ".yyYYo.......b..",
+      ".yyyYYoo........",
+      "..yyyYYYoooo....",
+      "...yyyyYYYYoo...",
+      ".....yyyyyyy...."
+    ],
+    pizza: [
+      "................",
+      ".EeeeeeeeeeeeeE.",
+      ".EEEEEEEEEEEEEE.",
+      ".ycccRRcccccccy.",
+      ".ycccRRccccRRcy.",
+      "..yccccccccRRy..",
+      "..ycRRccccccy...",
+      "...ycRRcccccy...",
+      "...yccccccRcy...",
+      "....ycccRRcy....",
+      "....yccccccy....",
+      ".....yccccy.....",
+      ".....ycRcy......",
+      "......ycy.......",
+      "......yy........",
+      "................"
+    ],
+    scroll: [
+      "................",
+      "..EeeeeeeeeeeE..",
+      ".EecccccccccceE.",
+      "...cccccccccc...",
+      "...cGGGGGGGcc...",
+      "...cccccccccc...",
+      "...cGGGGGcccc...",
+      "...cccccccccc...",
+      "...cGGGGGGGcc...",
+      "...cccccccccc...",
+      "...cGGGGcRRcc...",
+      "...cccccRRccc...",
+      ".EecccccccccceE.",
+      "..EeeeeeeeeeeE..",
+      "................",
+      "................"
+    ],
+    camera: [
+      "................",
+      "................",
+      "...ggg....ww....",
+      ".GGGGGGGGGGGGGG.",
+      ".GggggBBBBgggrG.",
+      ".GgggBnnnnBgggG.",
+      ".GgggBnbwnBgggG.",
+      ".GgggBnnbnBgggG.",
+      ".GgggBnnnnBgggG.",
+      ".GggggBBBBggggG.",
+      ".GGGGGGGGGGGGGG.",
+      "................"
+    ],
+    // Control Resonant: the floating inverted pyramid, lit red from below
+    pyramid: [
+      "........................",
+      "..r..................r..",
+      "......r.........r.......",
+      ".RRRRRRRRRRRRRRRRRRRRRR.",
+      "..GXXXXXXXXXxxxxxxxxxx..",
+      "...GXXXXXXXXxxxxxxxxx...",
+      "....GXXXXXXXxxxxxxxx....",
+      ".....GXXXXXXxxxxxxx.....",
+      "......GXXXXXxxxxxx......",
+      ".......GXXXXxxxxx.......",
+      "........GXXXxxxx........",
+      ".........GXXxxx.........",
+      "..........GXxx..........",
+      "...........Gx...........",
+      "........................",
+      "...r...................r",
+      "...........rr...........",
+      "......r..........r......",
+      "..........r..r.........."
+    ],
+    // The Blood of Dawnwalker: half sun, half blood moon, with a drip
+    dawn() {
+      const rows = [], cx = 11.5, cy = 10.5, R = 9.3;
+      for (let y = 0; y < 24; y++) {
+        let row = "";
+        for (let x = 0; x < 24; x++) {
+          const dx = x - cx, dy = y - cy, d = Math.hypot(dx, dy);
+          let ch = ".";
+          if (d <= R) {
+            if (x < 12) ch = d > R - 1.3 ? "o" : (dx + dy < -7 ? "y" : "Y");
+            else ch = d > R - 1.3 ? "m"
+              : ((x - 15) ** 2 + (y - 7) ** 2 < 3 || (x - 17) ** 2 + (y - 13) ** 2 < 2 || (x - 13) ** 2 + (y - 16) ** 2 < 1.5) ? "m" : "R";
+          }
+          // three short sun rays on the day side
+          const ray = [[0, 10], [0, 11], [1, 10], [1, 11], [2, 1], [3, 2], [2, 20], [3, 19]];
+          if (ray.some(([rx, ry]) => rx === x && ry === y)) ch = "Y";
+          if ((x === 16 && (y === 19 || y === 20)) || ((y === 21 || y === 22) && x >= 15 && x <= 17) || (y === 23 && x === 16)) ch = "R";
+          if (x === 15 && y === 21) ch = "r";
+          row += ch;
+        }
+        rows.push(row);
+      }
+      return rows;
+    },
+    // Crimson Desert: greatsword planted in the dunes under a red sun
+    desert() {
+      const rows = [];
+      for (let y = 0; y < 24; y++) {
+        let row = "";
+        for (let x = 0; x < 24; x++) {
+          let ch = ".";
+          const d = Math.hypot(x - 16, y - 8);
+          if (d <= 5.3) ch = d > 4.3 ? "m" : (x + y < 22 ? "r" : "R");
+          const top1 = 15 + Math.round(1.6 * Math.sin(x * 0.38 + 1));
+          const top2 = 18 + Math.round(1.4 * Math.sin(x * 0.3 + 3));
+          if (y >= top1) ch = y === top1 ? "c" : "d";
+          if (y >= top2) ch = y === top2 ? "d" : "D";
+          if (x === 7 || x === 8) {
+            if (y === 2) ch = "Y";
+            else if (y >= 3 && y <= 5) ch = "E";
+            else if (y >= 7 && y <= 15) ch = x === 7 ? "w" : "g";
+          }
+          if (y === 6 && x >= 4 && x <= 11) ch = (x === 4 || x === 11) ? "o" : "Y";
+          row += ch;
+        }
+        rows.push(row);
+      }
+      return rows;
+    },
+    // Assassin's Creed: hooded assassin figure
+    hood: [
+      ".......WW.......",
+      "......WwwW......",
+      ".....WwwwwW.....",
+      "....WwwwwwwW....",
+      "...WwwwWWwwwW...",
+      "...WwwGkkGwwW...",
+      "..WwwGkkkkGwwW..",
+      "..WwGkkkkkkGwW..",
+      "..WwGkykkykGwW..",
+      "..WwGkkkkkkGwW..",
+      "..WwwGksskGwwW..",
+      "...WwwGsssGwwW..",
+      "..gWwwwGGwwwwWg.",
+      ".gWwwRRRRRRwwWg.",
+      ".gWwwwEEEEwwwWg.",
+      "gWwwwwEEEEwwwwWg"
+    ],
+    // Platinum trophy, as on PSN today: a glowing blue galaxy orb with the
+    // square / triangle / cross / circle symbols, cradled by silver crescent
+    // prongs on a glowing stem and a round silver base
+    plat() {
+      const W = 26, H = 31, cx = 12.5, oy = 8.5, r = 8.2;
+      const g = Array.from({ length: H }, () => Array(W).fill("."));
+      const put = (x, y, ch) => { if (x >= 0 && x < W && y >= 0 && y < H) g[y][x] = ch; };
+
+      // base: three stepped tiers, light on top, darker underneath
+      [[26, 4.2, "A"], [27, 5.2, "Q"], [28, 7.2, "A"], [29, 8.2, "Q"], [30, 8.2, "Z"]].forEach(([y, hw, ch]) => {
+        for (let x = 0; x < W; x++) if (Math.abs(x - cx) <= hw) put(x, y, x < cx - hw + 2 ? "w" : ch);
+      });
+      // stem with a beam of light running down its middle
+      for (let y = 17; y <= 25; y++) for (let x = 10; x <= 15; x++) {
+        const inner = x === 12 || x === 13;
+        if (y >= 22 || inner) put(x, y, inner ? (y < 22 ? "I" : "H") : (x < 12 ? "A" : "Q"));
+      }
+      // silver crescent prongs: [outer x, inner x] of the left prong per row, mirrored on the right
+      const prong = { 6: [3, 3], 7: [2, 3], 8: [2, 3], 9: [1, 3], 10: [1, 3], 11: [1, 3], 12: [1, 4], 13: [2, 4],
+        14: [2, 5], 15: [3, 6], 16: [4, 7], 17: [5, 8], 18: [6, 9], 19: [7, 10], 20: [8, 11], 21: [9, 11], 22: [10, 11] };
+      Object.entries(prong).forEach(([y, [a, b]]) => {
+        y = +y;
+        for (let x = a; x <= b; x++) {
+          put(x, y, x === a ? "Q" : x === b ? "w" : "A");               // left: lit
+          put(W - 1 - x, y, x === a ? "Z" : x === b ? "A" : "Q");       // right: in shade
+        }
+      });
+      // the orb: deep space blue, lighter toward the top left, glowing rim, a few stars
+      for (let y = 0; y <= 17; y++) for (let x = 0; x < W; x++) {
+        const dx = x - cx, dy = y - oy, d = Math.hypot(dx, dy);
+        if (d > r) continue;
+        if (d > r - 1) { put(x, y, "I"); continue; }
+        const t = (dx + dy) / r + 0.18 * (Math.sin(x * 1.3 + y * 0.7) + Math.sin(y * 1.1 - x * 0.4));
+        put(x, y, t < -1.15 ? "V" : t < 0.1 ? "O" : "U");
+      }
+      ["5,8", "20,8", "12,16", "12,1", "5,12", "20,13"].forEach(p => { const [x, y] = p.split(",").map(Number); put(x, y, "w"); });
+      // the four PlayStation symbols in white
+      const sym = [
+        // square
+        [7, 3], [8, 3], [9, 3], [10, 3], [7, 4], [10, 4], [7, 5], [10, 5], [7, 6], [8, 6], [9, 6], [10, 6],
+        // triangle
+        [16, 3], [15, 4], [17, 4], [14, 5], [18, 5], [14, 6], [15, 6], [16, 6], [17, 6], [18, 6],
+        // cross
+        [7, 10], [10, 10], [8, 11], [9, 11], [8, 12], [9, 12], [7, 13], [10, 13],
+        // circle
+        [15, 10], [16, 10], [14, 11], [17, 11], [14, 12], [17, 12], [15, 13], [16, 13]
+      ];
+      // nudge each symbol one pixel toward the centre of the orb
+      sym.forEach(([x, y]) => put(x + (x < cx ? 1 : -1), y + (y < oy ? 1 : -1), "w"));
+      return g.map(row => row.join(""));
+    },
+    // God of War Ragnarok: the Leviathan Axe with frost edge and runes
+    axe() {
+      const rows = [], A = [4, 22], B = [18, 3.5];
+      const len = Math.hypot(B[0] - A[0], B[1] - A[1]), ux = (B[0] - A[0]) / len, uy = (B[1] - A[1]) / len;
+      const px = uy, py = -ux, H = [15, 7.5];
+      const frost = ["3,4", "6,1", "21,12", "22,8", "1,9"];
+      for (let y = 0; y < 24; y++) {
+        let row = "";
+        for (let x = 0; x < 24; x++) {
+          let ch = ".";
+          const t = (x - A[0]) * ux + (y - A[1]) * uy, dist = Math.abs((x - A[0]) * px + (y - A[1]) * py);
+          if (t >= 0 && t <= len && dist < 1.1) ch = (Math.floor(t) % 3 === 0 && t < len - 6) ? "e" : "E";
+          const vx = x - H[0], vy = y - H[1], out = vx * px + vy * py, side = vx * ux + vy * uy;
+          if (out > 0.6 && out < 8.2 && Math.abs(side) < 2 + out * 0.55) {
+            ch = out > 7.2 ? "b" : out > 6 ? "w" : out > 3 ? "W" : "g";
+            if (out > 3.4 && out < 5.4 && Math.abs(side) < 2.4 && (x + y) % 2 === 0) ch = "B";
+          }
+          if (Math.hypot(x - A[0], y - A[1]) < 1.6) ch = "G";
+          if (frost.includes(x + "," + y)) ch = "b";
+          row += ch;
+        }
+        rows.push(row);
+      }
+      return rows;
+    },
+    // Clair Obscur: Expedition 33: the Paintress's monolith with its painted number, falling petals
+    monolith: [
+      "...........XX...........",
+      "..........GXXX..........",
+      ".........GXXXXX.........",
+      "........GXXXXXXX........",
+      ".......GXXXXXXXXX.......",
+      "...rR..GXXXXXXXXX.......",
+      ".......GXXXXXXXXX...Rr..",
+      ".......GXXXXXXXXX.......",
+      ".......GwwwXXwwwX.......",
+      ".......GXXwXXXXwX.......",
+      ".......GXwwXXXwwX.......",
+      ".......GXXwXXXXwX.......",
+      ".......GwwwXXwwwX.......",
+      ".......GXXXXXXXXX.......",
+      "..Rr...GXXXXXXXXX.......",
+      ".......GXXXXXXXXX..rR...",
+      ".......GXXXXXXXXX.......",
+      ".......GXXXXXXXXX.......",
+      "....r..GXXXXXXXXX.......",
+      ".......GXXXXXXXXX....r..",
+      "......GXXXXXXXXXXX......",
+      ".....GGGGGGGGGGGGGG.....",
+      "....GGGGGGGGGGGGGGGG...."
+    ]
+  };
+
+  const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+
+  // Draw each sprite with an automatic 1px dark outline
+  function paint(c) {
+    const src = SPRITES[c.dataset.sprite];
+    const rows = typeof src === "function" ? src() : src;
+    const w = Math.max(...rows.map(r => r.length)) + 2, h = rows.length + 2;
+    c.width = w; c.height = h;
+    if (!c.hasAttribute("aria-label")) c.setAttribute("aria-hidden", "true");
+    const filled = (x, y) => { const ch = (rows[y - 1] || "")[x - 1]; return !!(ch && PAL[ch]); };
+    const ctx = c.getContext("2d"), img = ctx.createImageData(w, h), d = img.data;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      let rgb = null;
+      if (filled(x, y)) rgb = hex(PAL[rows[y - 1][x - 1]]);
+      else if (filled(x - 1, y) || filled(x + 1, y) || filled(x, y - 1) || filled(x, y + 1)) rgb = OUTLINE;
+      if (rgb) { const i = (y * w + x) * 4; d[i] = rgb[0]; d[i + 1] = rgb[1]; d[i + 2] = rgb[2]; d[i + 3] = 255; }
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+  document.querySelectorAll("canvas[data-sprite]").forEach(paint);
+  function sprite(name, style) {
+    const c = document.createElement("canvas");
+    c.className = "sprite"; c.dataset.sprite = name;
+    if (style) c.style.cssText = style;
+    paint(c);
+    return c;
+  }
+
+  // Hero scene: dithered sunset sky, sun and shaded mountain layers
+  const BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
+  function drawScene() {
+    const cv = document.getElementById("scene");
+    const W = Math.ceil(cv.clientWidth / 3), H = Math.ceil(cv.clientHeight / 3);
+    if (!W || !H) return;
+    cv.width = W; cv.height = H;
+    const ctx = cv.getContext("2d"), img = ctx.createImageData(W, H), d = img.data;
+    const put = (x, y, rgb) => { const i = (y * W + x) * 4; d[i] = rgb[0]; d[i + 1] = rgb[1]; d[i + 2] = rgb[2]; d[i + 3] = 255; };
+    const dith = (x, y, f) => f * 16 > BAYER[y & 3][x & 3];
+    const ramp = (stops, t, x, y) => {
+      const p = Math.min(Math.max(t, 0), .9999) * (stops.length - 1), i = Math.floor(p);
+      return stops[Math.round(p)]; // hard color bands, no blending
+    };
+
+    const sky = ["#0b0a2a", "#1d1150", "#3e1872", "#7a1f7e", "#c2346b", "#ff7a45", "#ffc36b"].map(hex);
+    const sunCols = ["#fff3b0", "#ffd25a", "#ff9a3c", "#ff5f6d"].map(hex);
+    const sunX = W * .72, sunY = H * .6, sunR = Math.max(H * .17, 18);
+    let seed = 11;
+    const rand = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const dx = x - sunX, dy = y - sunY, dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < sunR) put(x, y, ramp(sunCols, (dy + sunR) / (2 * sunR), x, y));
+      else put(x, y, ramp(sky, y / (H * .8), x, y));
+    }
+    for (let i = 0; i < W * .5; i++) {
+      const x = Math.floor(rand() * W), y = Math.floor(rand() * H * .45), big = rand() > .9;
+      put(x, y, hex(rand() > .75 ? "#ffe9a8" : "#ffffff"));
+      if (big && x > 0 && x < W - 1 && y > 0) { put(x - 1, y, hex("#9a8fd8")); put(x + 1, y, hex("#9a8fd8")); put(x, y - 1, hex("#9a8fd8")); }
+    }
+
+    const layers = [
+      { base: .62, amp: .1, f: .021, ridge: "#8a4fb0", hi: "#5a2c86", lo: "#2e1658" },
+      { base: .72, amp: .09, f: .034, ridge: "#5a3a9c", hi: "#2f1a66", lo: "#170b3a" },
+      { base: .84, amp: .07, f: .05, ridge: "#3a2a70", hi: "#150c34", lo: "#07051a" }
+    ];
+    layers.forEach((L, li) => {
+      const ridge = hex(L.ridge), cols = [hex(L.hi), hex(L.lo)];
+      for (let x = 0; x < W; x++) {
+        const top = Math.floor(H * L.base + Math.sin(x * L.f + li * 2.3) * H * L.amp
+          + Math.sin(x * L.f * 2.7 + li) * H * L.amp * .45 + Math.sin(x * L.f * 7.1) * H * .012);
+        for (let y = Math.max(top, 0); y < H; y++) {
+          put(x, y, y === top ? ridge : cols[0]);
+        }
+      }
+    });
+    ctx.putImageData(img, 0, 0);
+  }
+  drawScene();
+  let rT; addEventListener("resize", () => { clearTimeout(rT); rT = setTimeout(drawScene, 120); });
+
+  let toastTimer;
+  function toast(text, title = "ACHIEVEMENT UNLOCKED") {
+    const t = document.getElementById("toast");
+    t.querySelector(".t1").textContent = title;
+    document.getElementById("toastText").textContent = text;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 2800);
+  }
+
+  // Skill meters: turn each bar into 20 cells (5 points each)
+  const CELLS = 20, LOW = 35;
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document.querySelectorAll(".bar").forEach(bar => {
+    const value = +bar.querySelector("i").dataset.w;
+    bar.dataset.w = value;
+    bar.innerHTML = "";
+    for (let i = 0; i < CELLS; i++) {
+      const cell = document.createElement("span");
+      cell.className = "cell"; cell.style.setProperty("--i", i);
+      bar.appendChild(cell);
+    }
+    if (value < LOW) { bar.classList.add("low"); bar.closest(".stat").classList.add("low"); }
+    bar.setAttribute("role", "meter");
+    bar.setAttribute("aria-valuemin", 0); bar.setAttribute("aria-valuemax", 100); bar.setAttribute("aria-valuenow", value);
+  });
+  // Light the cells one at a time, like a health bar filling up
+  function fillBar(bar, value) {
+    const cells = bar.querySelectorAll(".cell"), n = Math.round(value / (100 / CELLS));
+    (bar._timers || []).forEach(clearTimeout); // a newer fill always wins
+    bar._timers = [];
+    cells.forEach((c, i) => {
+      const on = () => { c.classList.toggle("on", i < n); c.classList.toggle("tip", i === n - 1); };
+      reduceMotion ? on() : bar._timers.push(setTimeout(on, i * 45));
+    });
+  }
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.querySelectorAll(".bar").forEach(b => fillBar(b, +b.dataset.w));
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: .2 });
+  io.observe(document.querySelector("#profile .stats"));
+
+  // Platinum counter: counts 0 → 19 when scrolled into view, lighting a trophy per tick
+  const PLATS = 19, platNum = document.getElementById("platNum"), shelf = document.getElementById("platShelf");
+  const shelfCups = Array.from({ length: PLATS }, () => shelf.appendChild(sprite("plat")));
+  const platIo = new IntersectionObserver(entries => {
+    if (!entries[0].isIntersecting) return;
+    platIo.disconnect();
+    if (reduceMotion) { platNum.textContent = PLATS; shelfCups.forEach(c => c.classList.add("lit")); return; }
+    let n = 0;
+    const tick = setInterval(() => {
+      n++;
+      platNum.textContent = n;
+      platNum.classList.remove("pop"); void platNum.offsetWidth; platNum.classList.add("pop");
+      shelfCups[n - 1].classList.add("lit");
+      if (n >= PLATS) clearInterval(tick);
+    }, 110);
+  }, { threshold: .4 });
+  platIo.observe(document.querySelector(".plat-card"));
+
+  // Short chiptune fanfare (square wave), played when the cheat fires
+  function fanfare() {
+    try {
+      const ac = new (window.AudioContext || window.webkitAudioContext)();
+      const notes = [523, 659, 784, 1047, 784, 1047, 1319, 1568];
+      notes.forEach((f, i) => {
+        const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + i * 0.08;
+        o.type = "square"; o.frequency.value = f;
+        g.gain.setValueAtTime(0.06, t); g.gain.setValueAtTime(0, t + (i === notes.length - 1 ? 0.35 : 0.07));
+        o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + 0.4);
+      });
+    } catch (e) { /* no audio available */ }
+  }
+
+  // ---------- Zuk Mode (cheat code) ----------
+  // Stagger the portrait rows so the color cycle ripples down the face
+  document.querySelectorAll(".photo svg > rect, .photo svg > path").forEach((el, i) => el.style.setProperty("--i", i));
+
+  // Pixel fireworks that burst out of the cursor
+  const FW_SCALE = 3, FW_COLORS = ["#ff4a5e", "#ff9a1f", "#ffd34d", "#2fe08a", "#4fb8ff", "#ff7ad9", "#ffffff"];
+  let fw = null; // { canvas, ctx, particles, raf, spawnTimer }
+  const pointer = { x: innerWidth / 2, y: innerHeight / 2 };
+  function trackPointer(e) {
+    const p = e.touches ? e.touches[0] : e;
+    if (p) { pointer.x = p.clientX; pointer.y = p.clientY; }
+  }
+  function burst(x, y, big) {
+    if (!fw) return;
+    const color = FW_COLORS[Math.floor(Math.random() * FW_COLORS.length)];
+    const n = big ? 48 : 22 + Math.floor(Math.random() * 12);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + Math.random() * 0.3, s = (big ? 1.2 : 0.7) + Math.random() * 0.9;
+      fw.particles.push({ x: x / FW_SCALE, y: y / FW_SCALE, vx: Math.cos(a) * s, vy: Math.sin(a) * s,
+        life: 38 + Math.random() * 30, age: 0, color });
+    }
+    if (fw.particles.length > 900) fw.particles.splice(0, fw.particles.length - 900);
+  }
+  function fireworksFrame() {
+    const { ctx, canvas } = fw;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    fw.particles = fw.particles.filter(p => p.age < p.life);
+    for (const p of fw.particles) {
+      p.age++; p.vy += 0.035; p.vx *= 0.985; p.vy *= 0.985; p.x += p.vx; p.y += p.vy;
+      const left = 1 - p.age / p.life;
+      // sparks turn white as they fade, and twinkle near the end
+      ctx.fillStyle = left < 0.3 ? "#ffffff" : p.color;
+      if (left < 0.2 && Math.random() < 0.4) continue;
+      ctx.fillRect(Math.round(p.x), Math.round(p.y), 1, 1);
+    }
+    fw.raf = requestAnimationFrame(fireworksFrame);
+  }
+  function sizeFireworks() {
+    if (!fw) return;
+    fw.canvas.width = Math.ceil(innerWidth / FW_SCALE); fw.canvas.height = Math.ceil(innerHeight / FW_SCALE);
+  }
+  function clickBurst(e) { trackPointer(e); burst(pointer.x, pointer.y, true); }
+  function startFireworks() {
+    if (fw || reduceMotion) return;
+    const canvas = document.createElement("canvas");
+    canvas.className = "fireworks"; canvas.setAttribute("aria-hidden", "true");
+    document.body.appendChild(canvas);
+    fw = { canvas, ctx: canvas.getContext("2d"), particles: [] };
+    sizeFireworks();
+    addEventListener("resize", sizeFireworks);
+    addEventListener("pointermove", trackPointer, { passive: true });
+    addEventListener("touchstart", trackPointer, { passive: true });
+    addEventListener("pointerdown", clickBurst);
+    fw.spawnTimer = setInterval(() => burst(pointer.x, pointer.y, false), 380);
+    burst(pointer.x, pointer.y, true);
+    fw.raf = requestAnimationFrame(fireworksFrame);
+  }
+  function stopFireworks() {
+    if (!fw) return;
+    cancelAnimationFrame(fw.raf); clearInterval(fw.spawnTimer);
+    removeEventListener("resize", sizeFireworks);
+    removeEventListener("pointermove", trackPointer);
+    removeEventListener("touchstart", trackPointer);
+    removeEventListener("pointerdown", clickBurst);
+    fw.canvas.remove(); fw = null;
+  }
+
+  // Short, slight glitches every couple of seconds
+  let glitchTimer = null;
+  function glitchOnce() {
+    const bars = document.createElement("div"); bars.className = "glitch-bars"; bars.setAttribute("aria-hidden", "true");
+    const tints = ["#ff2bd6", "#2bffe6", "#ffffff", "#ffd34d"];
+    for (let i = 0, n = 2 + Math.floor(Math.random() * 3); i < n; i++) {
+      const b = document.createElement("i");
+      b.style.top = Math.random() * 100 + "%";
+      b.style.height = 2 + Math.floor(Math.random() * 4) * 2 + "px";
+      b.style.background = tints[Math.floor(Math.random() * tints.length)];
+      b.style.transform = `translateX(${(Math.random() - 0.5) * 30}px)`;
+      bars.appendChild(b);
+    }
+    document.body.appendChild(bars);
+    document.body.classList.add("glitching");
+    setTimeout(() => { bars.remove(); document.body.classList.remove("glitching"); }, 180);
+  }
+  function scheduleGlitch() {
+    glitchTimer = setTimeout(() => { glitchOnce(); scheduleGlitch(); }, 1600 + Math.random() * 2600);
+  }
+
+  function zukMode() {
+    const already = document.body.classList.contains("zuk-mode");
+    fanfare();
+    document.body.classList.add("zuk-mode");
+
+    // Big announcement
+    const banner = document.getElementById("cheat");
+    banner.classList.add("show");
+    setTimeout(() => banner.classList.remove("show"), 2600);
+    setTimeout(() => toast("Zuk Mode on"), 2800);
+
+    if (reduceMotion) return;
+    if (!already) { startFireworks(); scheduleGlitch(); }
+    // Screen flash and shake
+    const flash = document.createElement("div"); flash.className = "flash";
+    document.body.appendChild(flash); setTimeout(() => flash.remove(), 600);
+    document.body.classList.remove("shake"); void document.body.offsetWidth; document.body.classList.add("shake");
+    // Rain of pixel loot
+    const rain = document.createElement("div"); rain.className = "rain";
+    // every icon shown on the page (except the empty heart), so new icons join the rain automatically
+    const loot = [...new Set([...document.querySelectorAll("canvas[data-sprite]")].map(c => c.dataset.sprite))]
+      .filter(name => name !== "heartEmpty");
+    for (let i = 0; i < 70; i++) {
+      const size = 24 + Math.floor(Math.random() * 4) * 8;
+      const c = sprite(loot[i % loot.length], `width:${size}px;height:${size}px;left:${Math.random() * 100}%`);
+      c.style.setProperty("--d", (1.8 + Math.random() * 2) + "s");
+      c.style.setProperty("--delay", (Math.random() * 1.4) + "s");
+      c.style.setProperty("--r", (Math.random() > .5 ? 1 : -1) * 360 + "deg");
+      rain.appendChild(c);
+    }
+    document.body.appendChild(rain);
+    setTimeout(() => rain.remove(), 5500);
+  }
+
+  function exitZukMode() {
+    document.body.classList.remove("zuk-mode", "glitching", "shake");
+    clearTimeout(glitchTimer); glitchTimer = null;
+    document.querySelectorAll(".glitch-bars, .rain, .flash").forEach(el => el.remove());
+    stopFireworks();
+    document.getElementById("cheat").classList.remove("show");
+    toast("Zuk Mode off", "BACK TO NORMAL");
+  }
+  document.getElementById("dismiss").addEventListener("click", e => { e.stopPropagation(); exitZukMode(); });
+
+  // Trigger 1: Konami code on a keyboard
+  const code = ["ArrowUp","ArrowUp","ArrowDown","ArrowDown","ArrowLeft","ArrowRight","ArrowLeft","ArrowRight","b","a"];
+  let pos = 0;
+  document.addEventListener("keydown", e => {
+    pos = e.key === code[pos] ? pos + 1 : (e.key === code[0] ? 1 : 0);
+    if (pos === code.length) { pos = 0; zukMode(); }
+  });
+  // Trigger 2: tap the controller in the top bar 5 times quickly
+  let taps = 0, tapTimer;
+  document.getElementById("logoPad").addEventListener("click", () => {
+    taps++; clearTimeout(tapTimer); tapTimer = setTimeout(() => taps = 0, 1500);
+    if (taps >= 5) { taps = 0; zukMode(); }
+  });
+</script>
+</body>
+</html>

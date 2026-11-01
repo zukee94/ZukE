@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZUK — Player One</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  /* PICO-8 palette */
+  :root {
+    --black: #000000;
+    --navy: #1d2b53;
+    --plum: #7e2553;
+    --green-d: #008751;
+    --brown: #ab5236;
+    --gray-d: #5f574f;
+    --gray-l: #c2c3c7;
+    --white: #fff1e8;
+    --red: #ff004d;
+    --orange: #ffa300;
+    --yellow: #ffec27;
+    --green: #00e436;
+    --blue: #29adff;
+    --lav: #83769c;
+    --pink: #ff77a8;
+    --px: 4px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--navy);
+    color: var(--white);
+    font-family: "VT323", monospace;
+    font-size: 24px;
+    line-height: 1.25;
+    overflow-x: hidden;
+    image-rendering: pixelated;
+  }
+  canvas.sprite { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
+  .pixel { font-family: "Press Start 2P", monospace; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+
+  /* chunky pixel box with notched corners */
+  .box {
+    position: relative;
+    background: var(--black);
+    margin: var(--px);
+    box-shadow:
+      0 calc(-1 * var(--px)) 0 0 var(--white),
+      0 var(--px) 0 0 var(--white),
+      calc(-1 * var(--px)) 0 0 0 var(--white),
+      var(--px) 0 0 0 var(--white),
+      0 calc(3 * var(--px)) 0 0 var(--gray-d),
+      calc(2 * var(--px)) calc(2 * var(--px)) 0 0 var(--gray-d);
+  }
+
+  nav {
+    position: sticky; top: 0; z-index: 40;
+    background: var(--black);
+    border-bottom: var(--px) solid var(--white);
+  }
+  nav .wrap { display: flex; justify-content: space-between; align-items: center; height: 60px; }
+  nav .logo { color: var(--yellow); font-size: 14px; display: flex; gap: 10px; align-items: center; }
+  nav a { color: var(--gray-l); text-decoration: none; margin-left: 18px; font-size: 10px; }
+  nav a:hover { color: var(--yellow); }
+  nav a:hover::before { content: "▶ "; }
+  @media (max-width: 600px) { nav .links { display: none; } }
+
+  header.hero {
+    min-height: 88vh; display: grid; place-items: center; text-align: center;
+    position: relative; overflow: hidden;
+    background: linear-gradient(var(--navy) 0 55%, var(--plum) 55% 70%, var(--red) 70% 78%, var(--orange) 78%);
+  }
+  #stars, #hills { position: absolute; left: 0; width: 100%; image-rendering: pixelated; }
+  #stars { top: 0; height: 100%; }
+  #hills { bottom: 0; height: 45%; }
+  .hero-inner { position: relative; z-index: 2; padding: 40px 0 120px; }
+  .tag { color: var(--green); font-size: 11px; margin-bottom: 28px; }
+  h1.name {
+    font-size: clamp(64px, 18vw, 160px); line-height: 1; color: var(--yellow);
+    text-shadow:
+      6px 0 0 var(--orange), 0 6px 0 var(--orange), 6px 6px 0 var(--orange),
+      12px 12px 0 var(--red), 18px 18px 0 var(--black);
+    animation: bob 1s steps(2) infinite;
+  }
+  @keyframes bob { 50% { transform: translateY(-6px); } }
+  .subtitle { margin-top: 36px; font-size: clamp(22px, 3.4vw, 30px); color: var(--white); text-shadow: 3px 3px 0 var(--black); }
+  .subtitle b { color: var(--green); font-weight: normal; }
+  .press {
+    display: inline-block; margin-top: 36px; color: var(--black); font-size: 12px;
+    text-decoration: none; padding: 16px 22px; background: var(--green);
+    box-shadow: 0 -4px 0 var(--black), 0 4px 0 var(--black), -4px 0 0 var(--black), 4px 0 0 var(--black), 0 10px 0 var(--green-d);
+    animation: blink 1s steps(1) infinite;
+  }
+  .press:hover { background: var(--yellow); animation: none; }
+  .press:active { transform: translateY(6px); box-shadow: 0 -4px 0 var(--black), 0 4px 0 var(--black), -4px 0 0 var(--black), 4px 0 0 var(--black); }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  section { padding: 90px 0; }
+  section:nth-of-type(even) { background: var(--black); }
+  section:nth-of-type(even) .box { background: var(--navy); }
+  h2 { font-size: clamp(14px, 3vw, 20px); color: var(--yellow); margin-bottom: 44px; text-shadow: 4px 4px 0 var(--plum); }
+  h2 span { color: var(--pink); }
+
+  .card { padding: 24px; transition: transform .15s steps(2); }
+  .card:hover { transform: translate(-4px, -4px); }
+
+  .profile { display: grid; grid-template-columns: 280px 1fr; gap: 32px; }
+  @media (max-width: 760px) { .profile { grid-template-columns: 1fr; } }
+  .avatar { background: var(--plum); padding: 16px; }
+  .avatar canvas { width: 100%; height: auto; }
+  .avatar-meta { margin-top: 18px; font-size: 9px; line-height: 2.2; color: var(--gray-l); }
+  .avatar-meta b { color: var(--yellow); font-weight: normal; }
+  .lives { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
+  .lives canvas { width: 21px; height: 18px; }
+  .stat { margin-bottom: 18px; }
+  .stat-row { display: flex; justify-content: space-between; font-size: 26px; }
+  .stat-row span:last-child { color: var(--yellow); }
+  .bar { height: 20px; background: var(--gray-d); margin-top: 4px; padding: 4px; box-shadow: 0 0 0 4px var(--black); }
+  .bar i {
+    display: block; height: 100%; width: 0;
+    background-image: repeating-linear-gradient(90deg, var(--c) 0 12px, transparent 12px 16px);
+    transition: width 1.6s steps(20);
+  }
+  .bar i.g { --c: var(--green); }
+  .bar i.p { --c: var(--pink); }
+  .bar i.c { --c: var(--blue); }
+  .bar i.r { --c: var(--red); }
+  .bar i.y { --c: var(--yellow); }
+  .bio { color: var(--gray-l); margin-top: 24px; }
+  .bio b { color: var(--green); font-weight: normal; }
+
+  .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 32px; }
+  .ach { display: flex; gap: 16px; align-items: flex-start; }
+  .ach canvas { width: 48px; height: 48px; flex: none; }
+  .ach h3 { font-family: "Press Start 2P", monospace; font-size: 11px; color: var(--yellow); margin-bottom: 10px; line-height: 1.5; }
+  .ach p { color: var(--gray-l); font-size: 22px; }
+  .ach .rare { font-size: 8px; color: var(--green); margin-top: 10px; display: block; }
+
+  .game { text-align: center; }
+  .game canvas { width: 96px; height: 96px; margin: 0 auto; }
+  .game h3 { font-family: "Press Start 2P", monospace; margin: 18px 0 10px; font-size: 12px; line-height: 1.6; color: var(--white); }
+  .game p { color: var(--gray-l); font-size: 22px; }
+  .game .hours { display: inline-block; margin-top: 14px; font-size: 8px; color: var(--black); background: var(--green); padding: 6px 8px; animation: blink 1.4s steps(1) infinite; }
+  .genre { margin-top: 48px; text-align: center; font-size: 11px; color: var(--gray-l); line-height: 2; }
+  .genre b { color: var(--black); background: var(--yellow); padding: 6px 10px; font-weight: normal; margin: 0 4px; display: inline-block; }
+
+  footer { padding: 60px 0; text-align: center; background: var(--black); border-top: var(--px) solid var(--white); color: var(--gray-l); }
+  footer .pixel { font-size: 12px; color: var(--red); margin-bottom: 16px; }
+  footer p { display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; }
+  footer canvas { width: 21px; height: 18px; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translate(-50%, 200%);
+    padding: 14px 20px; display: flex; gap: 14px; align-items: center; z-index: 60;
+    transition: transform .3s steps(4), visibility .3s; max-width: calc(100% - 32px); visibility: hidden;
+  }
+  .toast.show { transform: translate(-50%, 0); visibility: visible; }
+  .toast canvas { width: 32px; height: 32px; }
+  .toast .t1 { font-size: 8px; color: var(--green); margin-bottom: 6px; }
+  .toast .t2 { font-size: 24px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="logo pixel"><canvas class="sprite" data-sprite="controller" style="width:36px;height:36px"></canvas>ZUK.EXE</div>
+    <div class="links pixel">
+      <a href="#profile">PROFILE</a>
+      <a href="#achievements">TROPHIES</a>
+      <a href="#games">GAMES</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <canvas id="stars"></canvas>
+  <canvas id="hills"></canvas>
+  <div class="hero-inner wrap">
+    <div class="tag pixel">PLAYER 1 HAS ENTERED THE GAME</div>
+    <h1 class="name pixel">ZUK</h1>
+    <p class="subtitle">Professional gamer. Part-time comedian. <b>Full-time legend.</b></p>
+    <a href="#profile" class="press pixel">PRESS START</a>
+  </div>
+</header>
+
+<section id="profile">
+  <div class="wrap">
+    <h2 class="pixel">01<span>-</span>PLAYER PROFILE</h2>
+    <div class="profile">
+      <div class="box card">
+        <div class="avatar"><canvas class="sprite" data-sprite="assassin"></canvas></div>
+        <div class="avatar-meta pixel">
+          NAME: <b>ZUK</b><br>
+          CLASS: <b>GAMER / JOKER</b><br>
+          LEVEL: <b id="level">99</b><br>
+          GENRE: <b>ACTION / 3RD PERSON</b><br>
+          STATUS: <b>ONLINE 24/7</b><br>
+          LIVES:
+          <div class="lives">
+            <canvas class="sprite" data-sprite="heart"></canvas>
+            <canvas class="sprite" data-sprite="heart"></canvas>
+            <canvas class="sprite" data-sprite="heart"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="box card">
+        <div class="stat"><div class="stat-row"><span>Assassin's Creed</span><span>MAX LVL</span></div><div class="bar"><i class="r" data-w="100"></i></div></div>
+        <div class="stat"><div class="stat-row"><span>Gaming Skill</span><span>97</span></div><div class="bar"><i class="g" data-w="97"></i></div></div>
+        <div class="stat"><div class="stat-row"><span>Humor</span><span>100</span></div><div class="bar"><i class="p" data-w="100"></i></div></div>
+        <div class="stat"><div class="stat-row"><span>Trash Talk</span><span>94</span></div><div class="bar"><i class="c" data-w="94"></i></div></div>
+        <div class="stat"><div class="stat-row"><span>Sleep Schedule</span><span>3</span></div><div class="bar"><i class="p" data-w="3"></i></div></div>
+        <div class="stat"><div class="stat-row"><span>Snack Consumption</span><span>MAX</span></div><div class="bar"><i class="y" data-w="100"></i></div></div>
+        <p class="bio">
+          <b>Zuk</b> is the guy who carries the squad and roasts them at the same time.
+          He's never lost a game — only had "lag." If you're in a lobby with him, expect
+          clutch plays, loud mic moments, and plays that make the whole lobby go quiet.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="achievements">
+  <div class="wrap">
+    <h2 class="pixel">02<span>-</span>ACHIEVEMENTS</h2>
+    <div class="grid3">
+      <div class="box card ach"><canvas class="sprite" data-sprite="trophy"></canvas><div><h3>1V5 CLUTCH</h3><p>Won a round alone while the team watched from spectator.</p><span class="rare pixel">0.1% OF PLAYERS</span></div></div>
+      <div class="box card ach"><canvas class="sprite" data-sprite="mic"></canvas><div><h3>MIC MENACE</h3><p>Made the entire lobby laugh, including the enemy team.</p><span class="rare pixel">0.5% OF PLAYERS</span></div></div>
+      <div class="box card ach"><canvas class="sprite" data-sprite="moon"></canvas><div><h3>NIGHT OWL</h3><p>"Just one more game" at 11pm. It's now 5am.</p><span class="rare pixel">COMMON (FOR ZUK)</span></div></div>
+      <div class="box card ach"><canvas class="sprite" data-sprite="controller"></canvas><div><h3>CONTROLLER SURVIVOR</h3><p>Lost a game and the controller survived. Character growth.</p><span class="rare pixel">ULTRA RARE</span></div></div>
+      <div class="box card ach"><canvas class="sprite" data-sprite="pizza"></canvas><div><h3>ONE-HANDED GOD</h3><p>Top fragged while eating pizza with the other hand.</p><span class="rare pixel">2% OF PLAYERS</span></div></div>
+      <div class="box card ach"><canvas class="sprite" data-sprite="wifi"></canvas><div><h3>IT WAS LAG</h3><p>Blamed the Wi-Fi 1,000 times. Was right twice.</p><span class="rare pixel">LEGENDARY</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="games">
+  <div class="wrap">
+    <h2 class="pixel">03<span>-</span>LATEST GAMES</h2>
+    <div class="grid3">
+      <div class="box card game"><canvas class="sprite" data-sprite="eye"></canvas><h3>CONTROL RESONANT</h3><p>Bending reality. Still can't bend his sleep schedule.</p><span class="hours pixel">NOW PLAYING</span></div>
+      <div class="box card game"><canvas class="sprite" data-sprite="bat"></canvas><h3>THE BLOOD OF DAWNWALKER</h3><p>Human by day, vampire by night. Zuk by both.</p><span class="hours pixel">NOW PLAYING</span></div>
+      <div class="box card game"><canvas class="sprite" data-sprite="sword"></canvas><h3>CRIMSON DESERT</h3><p>Open world, giant bosses, zero chill.</p><span class="hours pixel">NOW PLAYING</span></div>
+    </div>
+    <p class="genre pixel">FAVORITE GENRE: <b>ACTION</b><b>3RD PERSON</b></p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="pixel">GAME OVER? NEVER.</div>
+    <p>Made with <canvas class="sprite" data-sprite="heart"></canvas> for Zuk — the best player in the lobby.</p>
+  </div>
+</footer>
+
+<div class="toast box" id="toast"><canvas class="sprite" data-sprite="star"></canvas><div><div class="t1 pixel">ACHIEVEMENT UNLOCKED</div><div class="t2" id="toastText"></div></div></div>
+
+<script>
+  const PAL = {
+    k: "#000000", n: "#1d2b53", p: "#7e2553", g: "#008751", b: "#ab5236", d: "#5f574f",
+    l: "#c2c3c7", w: "#fff1e8", r: "#ff004d", o: "#ffa300", y: "#ffec27", G: "#00e436",
+    B: "#29adff", v: "#83769c", P: "#ff77a8", s: "#ffccaa"
+  };
+
+  const SPRITES = {
+    assassin: [
+      ".......ww.......",
+      "......wwww......",
+      ".....wwwwww.....",
+      "....wwwwwwww....",
+      "...wwwllllwww...",
+      "...wwlkkkklww...",
+      "..wwlkkkkkklww..",
+      "..wwkkykkykkww..",
+      "..wwkkkkkkkkww..",
+      "..wwlkssssklww..",
+      "...wwlssssllww..",
+      "...wwwlsslwww...",
+      "..lwwwwllwwwwl..",
+      ".lwwwrrrrrrwwwl.",
+      ".lwwwwbbbbwwwwl.",
+      "lwwwwwbbbbwwwwwl"
+    ],
+    trophy: [
+      "..yyyyyyyy..",
+      "yyywyyyyyoyy",
+      "y.ywyyyyyo.y",
+      "y.ywyyyyyo.y",
+      ".yywyyyyyoy.",
+      "...yyyyyo...",
+      "....yyyo....",
+      ".....yo.....",
+      ".....yo.....",
+      "....yyoo....",
+      "...bbbbbb...",
+      "...bbbbbb..."
+    ],
+    mic: [
+      "....BBBB....",
+      "...BwBBBB...",
+      "...BBBBBB...",
+      "...BBBBBB...",
+      "...BBBBBB...",
+      ".l..BBBB..l.",
+      ".l...ll...l.",
+      "..l..ll..l..",
+      "...llllll...",
+      ".....ll.....",
+      "....llll....",
+      "............"
+    ],
+    moon: [
+      "....yyyy....",
+      "..yyyy......",
+      ".yyyy....w..",
+      ".yyy....www.",
+      "yyyy.....w..",
+      "yyyy........",
+      "yyyy........",
+      "yyyyy.......",
+      ".yyyyy....y.",
+      ".yyyyyyyyyy.",
+      "..yyyyyyyy..",
+      "....yyyy...."
+    ],
+    controller: [
+      "............",
+      "............",
+      "..vvvvvvvv..",
+      ".vvwvvvvrvv.",
+      "vvwwwvvGvBvv",
+      "vvvwvvvvyvvv",
+      "vvvvvvvvvvvv",
+      "vvvv....vvvv",
+      "vvv......vvv",
+      ".v........v.",
+      "............",
+      "............"
+    ],
+    pizza: [
+      "bbbbbbbbbbbb",
+      "boyyyyyyyyob",
+      ".yyryyyyryy.",
+      ".yrryyyyrry.",
+      "..yyyyryyy..",
+      "..yyyrryyy..",
+      "...yyyyyy...",
+      "...yryyyy...",
+      "....yyyy....",
+      "....yyyy....",
+      ".....yy.....",
+      ".....yy....."
+    ],
+    wifi: [
+      "............",
+      "...BBBBBB...",
+      ".BB......BB.",
+      "B..BBBBBB..B",
+      "..B......B..",
+      "....BBBB....",
+      "...B....B...",
+      "............",
+      ".....BB.....",
+      ".....BB.....",
+      "............",
+      "............"
+    ],
+    eye: [
+      "............",
+      "rrrrrrrrrrrr",
+      ".r........r.",
+      "..r.BBBB.r..",
+      "..rBwwwwBr..",
+      "...BwkkwB...",
+      "...BwkkwB...",
+      "....BwwB....",
+      ".....rr.....",
+      ".....rr.....",
+      "............",
+      "............"
+    ],
+    bat: [
+      "............",
+      "............",
+      "r...r..r...r",
+      "rr..rrrr..rr",
+      "rrr.ryyr.rrr",
+      "rrrrrrrrrrrr",
+      "rrrrpwwprrrr",
+      "rr.rrrrrr.rr",
+      "r...r..r...r",
+      "....r..r....",
+      "............",
+      "............"
+    ],
+    sword: [
+      "..........ll",
+      ".........lwl",
+      "........lwl.",
+      ".......lwl..",
+      "......lwl...",
+      ".....lwl....",
+      "..r.lwl.....",
+      "...rwl......",
+      "..brr.......",
+      ".bb..r......",
+      "bb..........",
+      "b..........."
+    ],
+    heart: [
+      ".rr.rr.",
+      "rwrrrrr",
+      "rrrrrrr",
+      ".rrrrr.",
+      "..rrr..",
+      "...r..."
+    ],
+    star: [
+      "...yy...",
+      "...yy...",
+      "yyyyyyyy",
+      ".yyyyyy.",
+      "..yyyy..",
+      ".yy..yy.",
+      "yy....yy",
+      "........"
+    ]
+  };
+
+  document.querySelectorAll("canvas[data-sprite]").forEach(c => {
+    const rows = SPRITES[c.dataset.sprite];
+    c.height = rows.length;
+    c.width = Math.max(...rows.map(r => r.length));
+    const ctx = c.getContext("2d");
+    rows.forEach((row, y) => [...row].forEach((ch, x) => {
+      if (PAL[ch]) { ctx.fillStyle = PAL[ch]; ctx.fillRect(x, y, 1, 1); }
+    }));
+  });
+
+  // Low-res sky + hills, scaled up with pixelated rendering
+  function drawScene() {
+    const stars = document.getElementById("stars"), hills = document.getElementById("hills");
+    const W = Math.ceil(innerWidth / 6);
+    stars.width = W; stars.height = Math.ceil(stars.clientHeight / 6);
+    const s = stars.getContext("2d");
+    let seed = 7;
+    const rand = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+    for (let i = 0; i < W * 0.6; i++) {
+      s.fillStyle = rand() > 0.8 ? PAL.y : PAL.w;
+      s.fillRect(Math.floor(rand() * W), Math.floor(rand() * stars.height * 0.55), 1, 1);
+    }
+    hills.width = W; hills.height = Math.ceil(hills.clientHeight / 6);
+    const h = hills.getContext("2d"), H = hills.height;
+    const layers = [[PAL.p, 0.75, 0.05], [PAL.n, 0.5, 0.09], [PAL.k, 0.25, 0.14]];
+    layers.forEach(([col, base, freq], li) => {
+      h.fillStyle = col;
+      for (let x = 0; x < W; x++) {
+        const y = Math.floor(H * (1 - base) + Math.sin(x * freq + li * 2) * H * 0.12 + Math.sin(x * freq * 2.7) * H * 0.05);
+        h.fillRect(x, y, 1, H - y);
+      }
+    });
+  }
+  drawScene();
+  addEventListener("resize", drawScene);
+
+  let toastTimer;
+  function toast(text) {
+    const t = document.getElementById("toast");
+    document.getElementById("toastText").textContent = text;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 2800);
+  }
+
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.querySelectorAll(".bar i").forEach(b => b.style.width = b.dataset.w + "%");
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: .3 });
+  io.observe(document.getElementById("profile"));
+
+  // Konami code easter egg
+  const code = ["ArrowUp","ArrowUp","ArrowDown","ArrowDown","ArrowLeft","ArrowRight","ArrowLeft","ArrowRight","b","a"];
+  let pos = 0;
+  document.addEventListener("keydown", e => {
+    pos = e.key === code[pos] ? pos + 1 : 0;
+    if (pos === code.length) {
+      pos = 0;
+      document.getElementById("level").textContent = "∞";
+      toast("Cheat Code: Zuk Mode");
+    }
+  });
+</script>
+</body>
+</html>
