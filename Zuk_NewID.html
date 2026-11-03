@@ -2365,25 +2365,29 @@
     })();
 
     // ================= DIV CLIMBER =================
-    // A platformer on the page itself: the tops of cards, headings and text are platforms,
-    // the cards slide side to side, and the goal is the PRESS START button at the very top.
-    // Every line of text is a platform too, so you can climb up through the cards' text.
-    // Running faster makes jumps higher, fast mid-air wall hits bounce you back up,
-    // and there's a double jump. No fail state: a fall lands on the footer.
+    // A platformer on the page itself. Platforms: every line of visible text, the tops of cards,
+    // buttons and badges, and the white lines between sections. Icons are solid blocks: you can
+    // stand on them and they stop you like walls. The cards slide side to side, and the goal is the
+    // PRESS START button at the very top. Running faster jumps higher, fast mid-air wall hits bounce
+    // you back up, and there's a double jump. No fail state: a fall lands on the footer.
     games.climber = (() => {
       const S = 3, W = 12 * S, H = 14 * S;
       const IDLE = SPRITES.climber;
       const RUN_A = [...IDLE.slice(0, 8), ".sBBBnBBB...", "..BBBnBBBs..", "..BBBBBBB...", "..GGGGGGG...", ".GGG...GGG..", "kww.....kww."];
       const RUN_B = [...IDLE.slice(0, 8), "..BBBnBBBs..", ".sBBBnBBB...", "..BBBBBBB...", "..GGGGGGG...", "...GGGGG....", "...kwwww...."];
       const JUMP = [...IDLE.slice(0, 6), "s..sssss..s.", "sBBBBBBBBBs.", "..BBBnBBB...", "..BBBnBBB...", "..BBBBBBB...", "..GGGGGGG...", "..GG...GG...", ".kww...kww.."];
-      // besides the text itself, only things with a visible outline are platforms (card tops, buttons, badges)
+      // things with a visible outline are platforms (card tops, buttons, badges); text is added separately
       const PLAT_SEL = "header .win, header .btn, section .win, section .badge";
       const MOVE_SEL = "header .intro, section .win.card, section .plat-card, section .fav";
+      const SOLID_SEL = "section canvas.sprite, section .photo svg"; // icons: floor and wall
       const GRAV = 0.6, MAX_FALL = 18, MAX_RUN = 10;
       const WALL_BOUNCE_SPEED = 6; // mid-air speed needed to bounce off a wall
+      const IDLE_PICK = 300;       // 5 seconds standing still at 60 steps a second
+      const INSET = 5;             // the sprite's empty margin, so collisions use the visible body
       const extraEl = $("mgExtra");
       const keys = { left: false, right: false, jump: false, pressed: false };
-      let p = null, plats = [], movers = [], textLines = [], btn = null, won = false, frameNo = 0, startTime = 0;
+      let p = null, plats = [], movers = [], solids = [], textLines = [], btn = null, icon = null;
+      let won = false, frameNo = 0, startTime = 0;
 
       function onKey(e, isDown) {
         const k = e.key;
@@ -2443,6 +2447,16 @@
         if (vy < -6 || vy > innerHeight + 6) return;
         ctx.fillStyle = c.edge; ctx.fillRect(0, vy, innerWidth, 3);
       }
+      // a wall hit: bounce off if moving fast in mid-air, otherwise just stop
+      function hitWall(x, sy) {
+        if (!p.ground && Math.abs(p.vx) >= WALL_BOUNCE_SPEED) {
+          p.vx = -p.vx * 0.95;
+          p.vy = Math.min(p.vy, -(9 + Math.abs(p.vx) * 0.5));
+          p.face = Math.sign(p.vx); p.spin = true; p.rot = 0;
+          p.doubleUsed = false; // a wall bounce gives the double jump back
+          puff(x, p.y - sy + H / 2, 8);
+        } else p.vx = 0;
+      }
 
       function win() {
         won = true;
@@ -2469,22 +2483,30 @@
           addEventListener("keydown", kd, true); addEventListener("keyup", ku, true);
           plats = [...document.querySelectorAll(PLAT_SEL)];
           btn = document.querySelector("header .btn");
-          movers = [...document.querySelectorAll(MOVE_SEL)].map(el => ({ el, amp: 30 + Math.random() * 50, speed: 0.6 + Math.random() * 0.9, phase: Math.random() * Math.PI * 2 }));
-          movers.forEach(m => { m.dx = 0; m.el.style.transform = ""; });
+          // sliding cards: switch off their hover slide animation, or they'd lag behind their platforms
+          movers = [...document.querySelectorAll(MOVE_SEL)].map(el => ({ el, amp: 30 + Math.random() * 50, speed: 0.6 + Math.random() * 0.9, phase: Math.random() * Math.PI * 2, dx: 0 }));
+          movers.forEach(m => { m.el.style.transition = "none"; m.el.style.transform = ""; });
           buildTextLines();
           document.documentElement.style.scrollBehavior = "auto";
-          // start on the footer floor
-          p = { x: innerWidth / 2 - W / 2, y: floorY() - H, vx: 0, vy: 0, ground: { floor: true }, groundX: 0, coyote: 0, buffer: 0,
-                face: 1, spin: false, rot: 0, doubleUsed: false };
-          scrollTo(0, document.documentElement.scrollHeight);
-          won = false; startTime = performance.now(); frameNo = 0;
+          // the hero leaps out of the Div Climber card's icon and drops to the footer to start
+          icon = document.querySelector('.mini[data-game="climber"] canvas.sprite');
+          const r = icon.getBoundingClientRect();
+          icon.style.visibility = "hidden";
+          solids = [...document.querySelectorAll(SOLID_SEL)].filter(el => el !== icon);
+          const x = r.left + r.width / 2 - W / 2;
+          p = { x, y: r.top + scrollY + r.height / 2 - H / 2, vx: Math.max(-6, Math.min(6, (innerWidth / 2 - x) / 60)), vy: -11,
+                ground: null, groundX: 0, coyote: 0, buffer: 0, face: 1, spin: true, rot: 0, doubleUsed: true, intro: true, idle: 0 };
+          p.face = p.vx < 0 ? -1 : 1;
+          puff(r.left + r.width / 2, r.top + r.height / 2, 14);
+          won = false; frameNo = 0; startTime = performance.now();
           Object.assign(keys, { left: false, right: false, jump: false, pressed: false });
           extraEl.innerHTML = "← → RUN · SPACE JUMP (TWICE TO DOUBLE JUMP)";
         },
         stop() {
           removeEventListener("keydown", kd, true); removeEventListener("keyup", ku, true);
-          movers.forEach(m => { m.el.style.transform = ""; });
-          movers = []; textLines = []; p = null;
+          movers.forEach(m => { m.el.style.transform = ""; m.el.style.transition = ""; });
+          if (icon) icon.style.visibility = "";
+          movers = []; textLines = []; solids = []; p = null;
           document.documentElement.style.scrollBehavior = "";
           extraEl.innerHTML = "";
         },
@@ -2509,6 +2531,14 @@
             const dx = t.mover ? t.mover.dx : 0;
             list.push({ id: t, x1: t.x1 + dx, x2: t.x2 + dx, y: t.y });
           }
+          // icons: solid blocks (their tops are platforms too)
+          const blocks = [];
+          for (const el of solids) {
+            const r = el.getBoundingClientRect();
+            if (r.width === 0 || r.height === 0) continue;
+            const b = { id: el, x1: r.left, x2: r.right, y: r.top + sy, y2: r.bottom + sy };
+            blocks.push(b); list.push(b);
+          }
           // the line between each pair of sections: a full-width, one-way platform
           // (jump up through it from below; once you're on top you can't fall back through)
           const lines = sectionsOf().slice(1).map(s => s.top);
@@ -2516,10 +2546,11 @@
           const find = id => list.find(o => o.id === id);
 
           if (!won) {
+            const control = !p.intro; // no steering while leaping out of the icon
             // run: quicker on the ground, floatier in the air, slides to a stop
             const acc = p.ground ? 0.55 : 0.35;
-            if (keys.left) { p.vx -= acc; p.face = -1; }
-            if (keys.right) { p.vx += acc; p.face = 1; }
+            if (control && keys.left) { p.vx -= acc; p.face = -1; }
+            if (control && keys.right) { p.vx += acc; p.face = 1; }
             if (!keys.left && !keys.right && p.ground) p.vx *= 0.82;
             p.vx = Math.max(-MAX_RUN, Math.min(MAX_RUN, p.vx));
             // ride a moving platform
@@ -2527,23 +2558,26 @@
               const pl = find(p.ground.id);
               if (pl) { p.x += pl.x1 - p.groundX; p.groundX = pl.x1; }
             }
+            const prevX = p.x;
             p.x += p.vx;
 
-            // walls (the screen edges): a fast mid-air hit bounces you off and up
-            const hitLeft = p.x < 0, hitRight = p.x > innerWidth - W;
-            if (hitLeft || hitRight) {
-              p.x = hitLeft ? 0 : innerWidth - W;
-              if (!p.ground && Math.abs(p.vx) >= WALL_BOUNCE_SPEED) {
-                p.vx = -p.vx * 0.95;
-                p.vy = Math.min(p.vy, -(9 + Math.abs(p.vx) * 0.5));
-                p.face = Math.sign(p.vx); p.spin = true; p.rot = 0;
-                p.doubleUsed = false; // a wall bounce gives the double jump back
-                puff(hitLeft ? 4 : innerWidth - 4, p.y - sy + H / 2, 8);
-              } else p.vx = 0;
+            // walls: the screen edges...
+            const hitLeft = p.x < -INSET, hitRight = p.x > innerWidth - W + INSET;
+            if (hitLeft || hitRight) { p.x = hitLeft ? -INSET : innerWidth - W + INSET; hitWall(hitLeft ? 4 : innerWidth - 4, sy); }
+            // ...and the icons
+            if (!p.intro) {
+              const by1 = p.y + 4, by2 = p.y + H - 1;
+              for (const b of blocks) {
+                const bx1 = p.x + INSET, bx2 = p.x + W - INSET;
+                if (bx2 <= b.x1 || bx1 >= b.x2 || by2 <= b.y || by1 >= b.y2) continue;
+                const fromLeft = prevX + W / 2 < (b.x1 + b.x2) / 2;
+                p.x = fromLeft ? b.x1 - W + INSET : b.x2 - INSET;
+                hitWall(fromLeft ? b.x1 - sy * 0 : b.x2, sy);
+              }
             }
 
             // jumping: a short input buffer and a few frames of grace after leaving a ledge
-            if (keys.pressed) { p.buffer = 6; keys.pressed = false; }
+            if (keys.pressed) { if (control) p.buffer = 6; keys.pressed = false; }
             if (p.ground) p.coyote = 6; else if (p.coyote > 0) p.coyote--;
             if (p.buffer > 0) {
               if (p.coyote > 0) {
@@ -2560,10 +2594,18 @@
             }
             if (p.buffer > 0) p.buffer--;
 
-            const prevFeet = p.y + H;
+            const prevFeet = p.y + H, prevTop = p.y;
             if (!p.ground) { p.vy = Math.min(p.vy + GRAV, MAX_FALL); p.y += p.vy; }
             if (p.y < 0) { p.y = 0; p.vy = Math.max(0, p.vy); }
+            // bump your head on an icon from below
+            if (!p.intro && p.vy < 0) {
+              for (const b of blocks) {
+                if (p.x + W - INSET <= b.x1 || p.x + INSET >= b.x2) continue;
+                if (p.y < b.y2 && prevTop >= b.y2 - 1) { p.y = b.y2; p.vy = 0; }
+              }
+            }
             const feet = p.y + H, c1 = p.x + W * 0.25, c2 = p.x + W * 0.75;
+            const land = () => { p.vy = 0; p.spin = false; p.doubleUsed = false; };
 
             if (p.ground) {
               // still standing on something?
@@ -2576,19 +2618,27 @@
             } else if (p.vy >= 0) {
               // land on the first platform top crossed this frame (they're one-way, jump up through them)
               let best = null;
-              for (const o of list) {
-                if (c2 >= o.x1 && c1 <= o.x2 && prevFeet <= o.y + 1 && feet >= o.y && (!best || o.y < best.y)) best = o;
+              if (!p.intro) {
+                for (const o of list) {
+                  if (c2 >= o.x1 && c1 <= o.x2 && prevFeet <= o.y + 1 && feet >= o.y && (!best || o.y < best.y)) best = o;
+                }
               }
-              const land = () => { p.vy = 0; p.spin = false; p.doubleUsed = false; };
               if (best) { p.y = best.y - H; p.ground = { id: best.id }; p.groundX = best.x1; land(); }
-              else if (feet >= floorY()) { p.y = floorY() - H; p.ground = { floor: true }; land(); }
+              else if (feet >= floorY()) {
+                p.y = floorY() - H; p.ground = { floor: true }; land();
+                if (p.intro) { p.intro = false; p.vx = 0; startTime = performance.now(); puff(p.x + W / 2, p.y - sy + H, 12); }
+              }
             }
+
+            // standing still for 5 seconds starts the nose-picking
+            const still = p.ground && !keys.left && !keys.right && Math.abs(p.vx) < 0.3;
+            p.idle = still ? p.idle + 1 : 0;
 
             // reached PRESS START?
             const b = btn.getBoundingClientRect();
-            if (p.x < b.right && p.x + W > b.left && p.y < b.bottom + sy && p.y + H >= b.top + sy - 1) win();
+            if (!p.intro && p.x < b.right && p.x + W > b.left && p.y < b.bottom + sy && p.y + H >= b.top + sy - 1) win();
 
-            if (frameNo % 10 === 0 && !won) {
+            if (frameNo % 10 === 0 && !won && !p.intro) {
               const height = Math.max(0, Math.round((floorY() - (p.y + H)) / 10));
               extraEl.innerHTML = `HEIGHT <b>${String(height).padStart(4, "0")}</b> · TIME <b>${clock(performance.now() - startTime)}</b><br>← → RUN · SPACE JUMP ×2`;
             }
@@ -2599,10 +2649,9 @@
           scrollTo(0, scrollY + (target - scrollY) * 0.12);
           const sy2 = scrollY;
 
-          // section lines and side platforms, in the page's current colors
+          // section lines, in the page's current colors
           const cs = getComputedStyle(document.body);
-          const c = { fill: cs.getPropertyValue("--win").trim(), edge: cs.getPropertyValue("--win-edge").trim(),
-                      inset: cs.getPropertyValue("--win-inset").trim(), shadow: cs.getPropertyValue("--shadow").trim() };
+          const c = { edge: cs.getPropertyValue("--win-edge").trim() };
           for (const y of lines) drawLine(y, sy2, c);
 
           // the hero
@@ -2614,6 +2663,18 @@
           if (p.spin && !p.ground) { p.rot += 0.35 * p.face; ctx.rotate(p.rot); }
           ctx.scale(p.face, 1);
           drawRows(rows, PAL, -W / 2, -H / 2, S);
+          if (p.idle > IDLE_PICK) {
+            // nose-picking: the arm comes up, the finger goes in and out
+            const px = (col, row, color) => { ctx.fillStyle = color; ctx.fillRect(-W / 2 + col * S, -H / 2 + row * S, S, S); };
+            const deep = Math.floor((p.idle - IDLE_PICK) / 18) % 2;
+            px(9, 9, PAL.B); px(9, 8, PAL.B); px(9, 7, PAL.B);   // sleeve raised
+            px(10, 6, PAL.s); px(11, 6, PAL.s);                  // hand
+            px(10, deep ? 4 : 5, PAL.s);                         // finger
+            // every so often, a flick
+            if ((p.idle - IDLE_PICK) % 200 === 199) {
+              particles.push({ x: vx + W / 2 + p.face * 14, y: vy + 15, vx: p.face * 2.5, vy: -2.5, g: 0.2, life: 40, color: "#8fe36a" });
+            }
+          }
           ctx.restore();
           // dust when running fast
           if (running && Math.abs(p.vx) > 6 && frameNo % 3 === 0) {
