@@ -381,6 +381,10 @@
   .mg-count b { color: var(--gold); font-weight: normal; font-size: 10px; }
   .mg-tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
   .mg-tools:empty { display: none; }
+  /* Div Climber shows height and time instead of the pixel counter */
+  .mg-extra:empty { display: none; }
+  .mg-extra b { color: var(--gold); font-weight: normal; font-size: 10px; }
+  .mg-hud.climb .mg-count, .mg-hud.climb #mgRepair { display: none; }
   .mg-tools button {
     display: grid; justify-items: center; gap: 4px; padding: 6px 2px 5px; border: 0; cursor: pointer;
     font-family: inherit; font-size: 6px; color: var(--muted); background: var(--win-inset);
@@ -655,6 +659,14 @@
           <span class="badge gold">▶ PLAY</span>
         </div>
       </button>
+      <button class="win card ach mini" type="button" data-game="climber">
+        <canvas class="sprite" data-sprite="climber"></canvas>
+        <div>
+          <h3>DIV CLIMBER</h3>
+          <p>The cards start sliding. Climb from the footer all the way back up to PRESS START. ← → to run, SPACE to jump. The faster you run, the higher you fly.</p>
+          <span class="badge gold">▶ PLAY</span>
+        </div>
+      </button>
       <button class="win card ach mini" type="button" data-game="painter">
         <canvas class="sprite" data-sprite="brush"></canvas>
         <div>
@@ -678,6 +690,7 @@
 <div class="mg-hud win" id="mgHud" hidden>
   <div class="mg-title" id="mgTitle">DIV INVADER</div>
   <div class="mg-count">PIXELS DESTROYED <b id="mgCount">0000</b></div>
+  <div class="mg-extra" id="mgExtra"></div>
   <div class="mg-tools" id="mgTools" role="toolbar" aria-label="Page Wrecker tools"></div>
   <div class="mg-actions">
     <button id="mgRepair" type="button">REPAIR</button>
@@ -1041,6 +1054,23 @@
       "rrr.RR.mm",
       ".o.o...o.",
       "o...o...o"
+    ],
+    // Div Climber hero: an original kid in a red cap, blue hoodie and sneakers (facing right)
+    climber: [
+      "...rrrrr....",
+      "..rrrrrrr...",
+      "..rrrrrrrrrr",
+      "..EEsssss...",
+      "..Esssksk...",
+      "..Esssssss..",
+      "...sssss....",
+      "..BBBBBBB...",
+      ".sBBBnBBBs..",
+      ".sBBBnBBBs..",
+      "..BBBBBBB...",
+      "..GGGGGGG...",
+      "..GGG.GGG...",
+      ".kwww.kwww.."
     ],
     // RANDOM tool icon: a die
     dice: [
@@ -1780,15 +1810,23 @@
     // ---- one render loop for everything; it sleeps when nothing is moving ----
     let raf = 0, active = null;
     const games = {};
+    // raf stays set for the whole frame, so anything that calls wake() mid-frame
+    // can't start a second loop (that made the games speed up the more they destroyed)
     function wake() { if (!raf) raf = requestAnimationFrame(loop); }
-    function loop() {
-      raf = 0;
+    // Fixed 60 steps a second, so games run at the same speed on 60 Hz and 144+ Hz screens
+    const STEP = 1000 / 60;
+    let acc = 0, lastT = 0;
+    function loop(now) {
+      if (!lastT || now - lastT > 250) lastT = now - STEP; // first frame, or back from a paused tab
+      acc += now - lastT; lastT = now;
+      if (acc < STEP - 2) { raf = requestAnimationFrame(loop); return; } // too early for the next step
+      acc = Math.min(Math.max(0, acc - STEP), STEP);
       ctx.clearRect(0, 0, fx.width, fx.height);
       if (active) games[active].frame();
       effects = effects.filter(draw => draw());
       // smoke drifting up from scorched pixels
-      const now = performance.now();
-      smokers = smokers.filter(s => s.until > now && s.el.isConnected);
+      const nowMs = performance.now();
+      smokers = smokers.filter(s => s.until > nowMs && s.el.isConnected);
       for (const s of smokers) {
         if (Math.random() < 0.06) {
           const r = s.el.getBoundingClientRect();
@@ -1810,14 +1848,15 @@
       }
       ctx.globalAlpha = 1;
       flushMasks();
-      if (active || particles.length || effects.length || smokers.length || ants.length || stains.length) raf = requestAnimationFrame(loop);
+      raf = (active || particles.length || effects.length || smokers.length || ants.length || stains.length) ? requestAnimationFrame(loop) : 0;
+      if (!raf) lastT = 0;
     }
 
     // ================= DIV INVADER =================
     // A ship on the right edge follows the cursor up and down and fires four times a second.
     // Each shot knocks out the first exposed pixel it reaches, on anything but the background.
     games.invader = (() => {
-      const SCALE = 3, FIRE_MS = 250, SPEED = 16;
+      const SCALE = 3, FIRE_MS = 250, SPEED = 9; // slow enough that shots are visible in flight
       const SHIP = ["......XX.", "....XXXX.", "..XXXXXX.", "XXXXWWXXo", "..YYYYYY.", "....YYYY.", "......YY."];
       const COLORS = { X: "#ffd34d", Y: "#c98a1f", W: "#ffffff", o: "#ff9a1f" };
       const shipW = SHIP[0].length * SCALE, shipH = SHIP.length * SCALE;
@@ -1844,6 +1883,19 @@
         }
         return best;
       }
+      // a bright pixel burst where a shot lands, so even a very short shot is seen
+      function impact(x, y) {
+        let f = 0;
+        effects.push(() => {
+          f++;
+          const r = f * 3;
+          ctx.fillStyle = f < 3 ? "#ffffff" : "#ffd34d";
+          ctx.fillRect(Math.round(x) - r, Math.round(y) - 1, r * 2, 3);
+          ctx.fillRect(Math.round(x) - 1, Math.round(y) - r, 3, r * 2);
+          if (f < 3) ctx.fillRect(Math.round(x) - 4, Math.round(y) - 4, 8, 8);
+          return f < 6;
+        });
+      }
       function fire() {
         if (document.hidden) return;
         // prev starts at the screen edge, so anything reaching under the ship still gets hit
@@ -1863,14 +1915,19 @@
             const prevX = b.prev; b.x -= SPEED; b.prev = b.x;
             // ants in the line of fire get hit first
             const ant = ants.find(a => Math.abs(a.y - b.y) < 6 && a.x <= prevX && a.x >= b.x);
-            if (ant) { splat(ant); return false; }
+            if (ant) { splat(ant); impact(ant.x, b.y); return false; }
             const h = findHit(b, prevX);
-            if (h) { destroyCell(h.el, h.row, h.col, h.r); return false; }
+            if (h) { destroyCell(h.el, h.row, h.col, h.r); impact(h.face, b.y); return false; }
             return b.x > -20;
           });
           for (const b of bullets) {
-            ctx.fillStyle = "#ffd34d"; ctx.fillRect(b.x, b.y - 1, 12, 3);
-            ctx.fillStyle = "#ffffff"; ctx.fillRect(b.x, b.y - 1, 3, 3);
+            // a glowing bolt: dark outline, orange trail, gold body, white-hot tip
+            const bx = Math.round(b.x), by = Math.round(b.y);
+            ctx.fillStyle = "#05081f"; ctx.fillRect(bx - 2, by - 4, 34, 9);
+            ctx.fillStyle = "#ff4a5e"; ctx.fillRect(bx + 18, by - 1, 12, 3);
+            ctx.fillStyle = "#ff9a1f"; ctx.fillRect(bx + 10, by - 2, 12, 5);
+            ctx.fillStyle = "#ffd34d"; ctx.fillRect(bx, by - 2, 14, 5);
+            ctx.fillStyle = "#ffffff"; ctx.fillRect(bx, by - 1, 6, 3);
           }
           const sx = shipX(), sy = Math.round(ship.y - shipH / 2);
           drawRows(SHIP, COLORS, sx, sy, SCALE, ch => ch === "o" && frameNo % 6 < 3); // engine flicker
@@ -2307,6 +2364,258 @@
       };
     })();
 
+    // ================= DIV CLIMBER =================
+    // A platformer on the page itself: the tops of cards, headings and text are platforms,
+    // the cards slide side to side, and the goal is the PRESS START button at the very top.
+    // Extra moving platforms fill the empty sides so every gap can be cleared.
+    // Running faster makes jumps higher, fast mid-air wall hits bounce you back up,
+    // and there's a double jump. No fail state: a fall lands on the footer.
+    games.climber = (() => {
+      const S = 3, W = 12 * S, H = 14 * S;
+      const IDLE = SPRITES.climber;
+      const RUN_A = [...IDLE.slice(0, 8), ".sBBBnBBB...", "..BBBnBBBs..", "..BBBBBBB...", "..GGGGGGG...", ".GGG...GGG..", "kww.....kww."];
+      const RUN_B = [...IDLE.slice(0, 8), "..BBBnBBBs..", ".sBBBnBBB...", "..BBBBBBB...", "..GGGGGGG...", "...GGGGG....", "...kwwww...."];
+      const JUMP = [...IDLE.slice(0, 6), "s..sssss..s.", "sBBBBBBBBBs.", "..BBBnBBB...", "..BBBnBBB...", "..BBBBBBB...", "..GGGGGGG...", "..GG...GG...", ".kww...kww.."];
+      const PLAT_SEL = "header .tag, header h1, header .subtitle, header .win, header .btn, section .win, section h2, section h3, section .lede, section .badge, section .stat, section .bio, section .id-meta, footer .end, footer p";
+      const MOVE_SEL = "header .intro, section .win.card, section .plat-card, section .fav";
+      const GRAV = 0.6, MAX_FALL = 18, MAX_RUN = 10;
+      const WALL_BOUNCE_SPEED = 6; // mid-air speed needed to bounce off a wall
+      const extraEl = $("mgExtra");
+      const keys = { left: false, right: false, jump: false, pressed: false };
+      let p = null, plats = [], movers = [], sides = [], btn = null, won = false, frameNo = 0, startTime = 0;
+
+      function onKey(e, isDown) {
+        const k = e.key;
+        if (k !== "ArrowLeft" && k !== "ArrowRight" && k !== " " && k !== "Spacebar") return;
+        e.preventDefault(); // no page scrolling while playing
+        if (k === "ArrowLeft") keys.left = isDown;
+        else if (k === "ArrowRight") keys.right = isDown;
+        else { if (isDown && !keys.jump) keys.pressed = true; keys.jump = isDown; }
+      }
+      const kd = e => onKey(e, true), ku = e => onKey(e, false);
+      const floorY = () => document.documentElement.scrollHeight - 2;
+      const clock = ms => { const s = Math.floor(ms / 1000); return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); };
+      const puff = (x, y, n) => {
+        for (let i = 0; i < n; i++) particles.push({ x, y, vx: (Math.random() - 0.5) * 3, vy: Math.random() * 1.5, g: 0, life: 14 + Math.random() * 8, max: 22, size: 3, grow: 0.25, fade: 0.7, color: "#d9dbe8" });
+      };
+
+      // The page's sections, top to bottom, with their page-y ranges
+      const sectionsOf = () => [document.querySelector("header.hero"), ...document.querySelectorAll("body > section"), document.querySelector("body > footer")]
+        .map(el => { const r = el.getBoundingClientRect(); return { el, top: r.top + scrollY, bottom: r.bottom + scrollY }; });
+
+      // Side platforms: one roughly every 100-125px of height from the footer to the top,
+      // 15-60px wide, in the empty gutter on ONE side per section (the side switches each section)
+      function buildSides() {
+        sides = [];
+        const wrap = document.querySelector("section .wrap").getBoundingClientRect();
+        const gutter = Math.max(0, wrap.left);
+        const secs = sectionsOf();
+        let side = Math.random() < 0.5 ? -1 : 1;
+        const sideOf = new Map(secs.map(s => [s, side = -side]));
+        for (let y = floorY() - 110; y > 90; y -= 100 + Math.random() * 25) {
+          const sec = secs.find(s => y >= s.top && y < s.bottom) || secs[0];
+          const sSide = sideOf.get(sec);
+          const w = Math.round(15 + Math.random() * 45);
+          const baseX = sSide < 0 ? Math.max(4, gutter / 2 - w / 2) : innerWidth - Math.max(4, gutter / 2 - w / 2) - w;
+          const amp = Math.min(46, Math.max(20, gutter - w / 2)); // how far it glides
+          sides.push({ side: sSide, y, w, baseX, amp, speed: 0.5 + Math.random() * 0.9, phase: Math.random() * 6.28, bob: 3 + Math.random() * 5 });
+        }
+      }
+      function sideRect(o, tt) {
+        const x = o.baseX + Math.sin(tt * o.speed + o.phase) * o.amp * (o.side < 0 ? 0.5 : -0.5) + (o.side < 0 ? o.amp * 0.5 : -o.amp * 0.5);
+        return { x1: x, x2: x + o.w, y: o.y + Math.sin(tt * o.speed * 1.3 + o.phase) * o.bob };
+      }
+      // drawn like a tiny card (.win): same fill, light border, dark inner edge, dark outline
+      // and drop shadow, using the page's live colors so it follows Zuk Mode too
+      function drawSide(r, sy, c) {
+        const x = Math.round(r.x1), y = Math.round(r.y - sy), w = Math.round(r.x2 - r.x1), h = 16;
+        if (y < -24 || y > innerHeight + 24) return;
+        ctx.fillStyle = "rgba(0, 0, 0, .4)"; ctx.fillRect(x, y + h + 2, w, 5);             // drop shadow
+        ctx.fillStyle = c.shadow; ctx.fillRect(x - 2, y - 2, w + 4, h + 4);                 // outer outline
+        ctx.fillStyle = c.edge;   ctx.fillRect(x + 1, y, w - 2, h); ctx.fillRect(x, y + 1, w, h - 2); // light border, rounded corners
+        ctx.fillStyle = c.inset;  ctx.fillRect(x + 3, y + 3, w - 6, h - 6);                 // dark inner edge
+        ctx.fillStyle = c.fill;   ctx.fillRect(x + 5, y + 5, w - 10, h - 10);               // card fill
+        ctx.fillStyle = "rgba(255, 255, 255, .14)"; ctx.fillRect(x + 5, y + 5, w - 10, 2);  // top highlight
+      }
+      // the boundary between two sections: a thin white line you can land on
+      function drawLine(y, sy, c) {
+        const vy = Math.round(y - sy);
+        if (vy < -6 || vy > innerHeight + 6) return;
+        ctx.fillStyle = c.edge; ctx.fillRect(0, vy, innerWidth, 3);
+      }
+
+      function win() {
+        won = true;
+        const time = performance.now() - startTime;
+        let best = null;
+        try { best = +localStorage.getItem("zukClimbBest") || null; if (!best || time < best) { best = time; localStorage.setItem("zukClimbBest", String(Math.round(time))); } } catch (e) { best = time; }
+        fanfare();
+        extraEl.innerHTML = `TOP REACHED!<br>TIME <b>${clock(time)}</b> · BEST <b>${clock(best)}</b>`;
+        toast(`Top reached in ${clock(time)}`, "YOU MADE IT!");
+        const cx = p.x + W / 2, cy = p.y - scrollY;
+        const cols = ["#ff4a5e", "#ffd34d", "#2fe08a", "#4fb8ff", "#ff7ad9", "#ffffff"];
+        for (let i = 0; i < 80; i++) {
+          const a = Math.random() * Math.PI * 2, s = 2 + Math.random() * 6;
+          particles.push({ x: cx, y: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 2, g: 0.15, life: 40 + Math.random() * 40, color: cols[i % cols.length] });
+        }
+        wake();
+        setTimeout(() => { if (active === "climber") setActive(null); }, 4000);
+      }
+
+      return {
+        name: "DIV CLIMBER",
+        canStart: () => hasMouse.matches || "Div Climber needs a keyboard",
+        start() {
+          addEventListener("keydown", kd, true); addEventListener("keyup", ku, true);
+          plats = [...document.querySelectorAll(PLAT_SEL)];
+          btn = document.querySelector("header .btn");
+          movers = [...document.querySelectorAll(MOVE_SEL)].map(el => ({ el, amp: 30 + Math.random() * 50, speed: 0.6 + Math.random() * 0.9, phase: Math.random() * Math.PI * 2 }));
+          buildSides();
+          document.documentElement.style.scrollBehavior = "auto";
+          // start on the footer floor
+          p = { x: innerWidth / 2 - W / 2, y: floorY() - H, vx: 0, vy: 0, ground: { floor: true }, groundX: 0, coyote: 0, buffer: 0,
+                face: 1, spin: false, rot: 0, doubleUsed: false };
+          scrollTo(0, document.documentElement.scrollHeight);
+          won = false; startTime = performance.now(); frameNo = 0;
+          Object.assign(keys, { left: false, right: false, jump: false, pressed: false });
+          extraEl.innerHTML = "← → RUN · SPACE JUMP (TWICE TO DOUBLE JUMP)";
+        },
+        stop() {
+          removeEventListener("keydown", kd, true); removeEventListener("keyup", ku, true);
+          movers.forEach(m => { m.el.style.transform = ""; });
+          movers = []; sides = []; p = null;
+          document.documentElement.style.scrollBehavior = "";
+          extraEl.innerHTML = "";
+        },
+        frame() {
+          if (!p) return;
+          frameNo++;
+          const tt = performance.now() / 1000;
+          // slide the cards side to side
+          for (const m of movers) m.el.style.transform = `translateX(${Math.round(Math.sin(tt * m.speed + m.phase) * m.amp)}px)`;
+          // every platform top this frame, in page coordinates; `id` says which one it is
+          const sy = scrollY;
+          const list = [];
+          for (const el of plats) {
+            const r = el.getBoundingClientRect();
+            if (r.width > 0) list.push({ id: el, x1: r.left, x2: r.right, y: r.top + sy });
+          }
+          for (const o of sides) list.push({ id: o, ...sideRect(o, tt) });
+          // the line between each pair of sections: a full-width, one-way platform
+          // (jump up through it from below; once you're on top you can't fall back through)
+          const lines = sectionsOf().slice(1).map(s => s.top);
+          lines.forEach((y, i) => list.push({ id: "line" + i, x1: -1e5, x2: 1e5, y }));
+          const find = id => list.find(o => o.id === id);
+
+          if (!won) {
+            // run: quicker on the ground, floatier in the air, slides to a stop
+            const acc = p.ground ? 0.55 : 0.35;
+            if (keys.left) { p.vx -= acc; p.face = -1; }
+            if (keys.right) { p.vx += acc; p.face = 1; }
+            if (!keys.left && !keys.right && p.ground) p.vx *= 0.82;
+            p.vx = Math.max(-MAX_RUN, Math.min(MAX_RUN, p.vx));
+            // ride a moving platform
+            if (p.ground && p.ground.id) {
+              const pl = find(p.ground.id);
+              if (pl) { p.x += pl.x1 - p.groundX; p.groundX = pl.x1; }
+            }
+            p.x += p.vx;
+
+            // walls (the screen edges): a fast mid-air hit bounces you off and up
+            const hitLeft = p.x < 0, hitRight = p.x > innerWidth - W;
+            if (hitLeft || hitRight) {
+              p.x = hitLeft ? 0 : innerWidth - W;
+              if (!p.ground && Math.abs(p.vx) >= WALL_BOUNCE_SPEED) {
+                p.vx = -p.vx * 0.95;
+                p.vy = Math.min(p.vy, -(9 + Math.abs(p.vx) * 0.5));
+                p.face = Math.sign(p.vx); p.spin = true; p.rot = 0;
+                p.doubleUsed = false; // a wall bounce gives the double jump back
+                puff(hitLeft ? 4 : innerWidth - 4, p.y - sy + H / 2, 8);
+              } else p.vx = 0;
+            }
+
+            // jumping: a short input buffer and a few frames of grace after leaving a ledge
+            if (keys.pressed) { p.buffer = 6; keys.pressed = false; }
+            if (p.ground) p.coyote = 6; else if (p.coyote > 0) p.coyote--;
+            if (p.buffer > 0) {
+              if (p.coyote > 0) {
+                p.vy = -(11 + Math.abs(p.vx) * 0.95); // momentum: running fast jumps higher
+                p.ground = null; p.coyote = 0; p.buffer = 0;
+                p.spin = Math.abs(p.vx) > 8.5; p.rot = 0;
+              } else if (!p.doubleUsed && p.buffer === 6) {
+                // double jump, just for fun
+                p.vy = -(10 + Math.abs(p.vx) * 0.45);
+                p.doubleUsed = true; p.buffer = 0;
+                p.spin = true; p.rot = 0;
+                puff(p.x + W / 2, p.y - sy + H, 10);
+              }
+            }
+            if (p.buffer > 0) p.buffer--;
+
+            const prevFeet = p.y + H;
+            if (!p.ground) { p.vy = Math.min(p.vy + GRAV, MAX_FALL); p.y += p.vy; }
+            if (p.y < 0) { p.y = 0; p.vy = Math.max(0, p.vy); }
+            const feet = p.y + H, c1 = p.x + W * 0.25, c2 = p.x + W * 0.75;
+
+            if (p.ground) {
+              // still standing on something?
+              if (p.ground.floor) p.y = floorY() - H;
+              else {
+                const pl = find(p.ground.id);
+                if (!pl || c2 < pl.x1 || c1 > pl.x2) p.ground = null;
+                else p.y = pl.y - H;
+              }
+            } else if (p.vy >= 0) {
+              // land on the first platform top crossed this frame (they're one-way, jump up through them)
+              let best = null;
+              for (const o of list) {
+                if (c2 >= o.x1 && c1 <= o.x2 && prevFeet <= o.y + 1 && feet >= o.y && (!best || o.y < best.y)) best = o;
+              }
+              const land = () => { p.vy = 0; p.spin = false; p.doubleUsed = false; };
+              if (best) { p.y = best.y - H; p.ground = { id: best.id }; p.groundX = best.x1; land(); }
+              else if (feet >= floorY()) { p.y = floorY() - H; p.ground = { floor: true }; land(); }
+            }
+
+            // reached PRESS START?
+            const b = btn.getBoundingClientRect();
+            if (p.x < b.right && p.x + W > b.left && p.y < b.bottom + sy && p.y + H >= b.top + sy - 1) win();
+
+            if (frameNo % 10 === 0 && !won) {
+              const height = Math.max(0, Math.round((floorY() - (p.y + H)) / 10));
+              extraEl.innerHTML = `HEIGHT <b>${String(height).padStart(4, "0")}</b> · TIME <b>${clock(performance.now() - startTime)}</b><br>← → RUN · SPACE JUMP ×2`;
+            }
+          }
+
+          // camera follows the player; falling scrolls back down
+          const target = p.y + H / 2 - innerHeight * 0.55;
+          scrollTo(0, scrollY + (target - scrollY) * 0.12);
+          const sy2 = scrollY;
+
+          // section lines and side platforms, in the page's current colors
+          const cs = getComputedStyle(document.body);
+          const c = { fill: cs.getPropertyValue("--win").trim(), edge: cs.getPropertyValue("--win-edge").trim(),
+                      inset: cs.getPropertyValue("--win-inset").trim(), shadow: cs.getPropertyValue("--shadow").trim() };
+          for (const y of lines) drawLine(y, sy2, c);
+          for (const o of list) if (sides.includes(o.id)) drawSide(o, sy2, c);
+
+          // the hero
+          const vx = Math.round(p.x), vy = Math.round(p.y - sy2);
+          const running = p.ground && Math.abs(p.vx) > 0.6;
+          const rows = !p.ground ? JUMP : running ? (Math.floor(frameNo / 6) % 2 ? RUN_A : RUN_B) : IDLE;
+          ctx.save();
+          ctx.translate(vx + W / 2, vy + H / 2);
+          if (p.spin && !p.ground) { p.rot += 0.35 * p.face; ctx.rotate(p.rot); }
+          ctx.scale(p.face, 1);
+          drawRows(rows, PAL, -W / 2, -H / 2, S);
+          ctx.restore();
+          // dust when running fast
+          if (running && Math.abs(p.vx) > 6 && frameNo % 3 === 0) {
+            particles.push({ x: vx + W / 2 - p.face * 12, y: vy + H - 2, vx: -p.vx * 0.1, vy: -0.6, g: 0.02, life: 14, max: 14, size: 3, grow: 0.2, fade: 0.6, color: "#d9dbe8" });
+          }
+        }
+      };
+    })();
+
     // ---- switching games on and off ----
     const cards = document.querySelectorAll(".mini");
     function setActive(name) {
@@ -2323,6 +2632,7 @@
         c.querySelector(".badge").textContent = on ? "■ STOP" : "▶ PLAY";
       });
       hud.hidden = !active;
+      hud.classList.toggle("climb", active === "climber");
       if (active) {
         refreshTargets();
         hudTitle.textContent = games[active].name;
