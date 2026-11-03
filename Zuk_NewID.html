@@ -385,6 +385,8 @@
   .mg-extra:empty { display: none; }
   .mg-extra b { color: var(--gold); font-weight: normal; font-size: 10px; }
   .mg-hud.climb .mg-count, .mg-hud.climb #mgRepair { display: none; }
+  /* while climbing, the game draws the section lines (with gaps), so the footer's own solid border is hidden */
+  body.climbing footer { border-top-color: transparent; }
   .mg-tools button {
     display: grid; justify-items: center; gap: 4px; padding: 6px 2px 5px; border: 0; cursor: pointer;
     font-family: inherit; font-size: 6px; color: var(--muted); background: var(--win-inset);
@@ -2441,11 +2443,29 @@
           }
         }
       }
-      // the boundary between two sections: a thin white line you can land on
-      function drawLine(y, sy, c) {
+      // The boundary between two sections: a thin white line you can land on, broken by one or two
+      // wide gaps (110-170px) you can fall straight through. Gaps are picked once per run.
+      let lineSegs = [];
+      function buildLineGaps(count) {
+        lineSegs = [];
+        for (let i = 0; i < count; i++) {
+          const n = Math.random() < 0.5 ? 1 : 2, zone = innerWidth / n, segs = [];
+          let x = 0;
+          for (let g = 0; g < n; g++) {
+            const w = 110 + Math.random() * 60;
+            const gx = g * zone + 30 + Math.random() * Math.max(0, zone - w - 60); // one gap per zone, away from the edges
+            if (gx > x) segs.push({ x1: x, x2: gx });
+            x = gx + w;
+          }
+          if (x < innerWidth) segs.push({ x1: x, x2: innerWidth });
+          lineSegs.push(segs);
+        }
+      }
+      function drawLine(i, y, sy, c) {
         const vy = Math.round(y - sy);
         if (vy < -6 || vy > innerHeight + 6) return;
-        ctx.fillStyle = c.edge; ctx.fillRect(0, vy, innerWidth, 3);
+        ctx.fillStyle = c.edge;
+        for (const s of lineSegs[i] || []) ctx.fillRect(Math.round(s.x1), vy, Math.round(s.x2 - s.x1), 3);
       }
       // a wall hit: bounce off if moving fast in mid-air, otherwise just stop
       function hitWall(x, sy) {
@@ -2487,6 +2507,8 @@
           movers = [...document.querySelectorAll(MOVE_SEL)].map(el => ({ el, amp: 30 + Math.random() * 50, speed: 0.6 + Math.random() * 0.9, phase: Math.random() * Math.PI * 2, dx: 0 }));
           movers.forEach(m => { m.el.style.transition = "none"; m.el.style.transform = ""; });
           buildTextLines();
+          buildLineGaps(sectionsOf().length - 1);
+          document.body.classList.add("climbing");
           document.documentElement.style.scrollBehavior = "auto";
           // the hero leaps out of the Div Climber card's icon and drops to the footer to start
           icon = document.querySelector('.mini[data-game="climber"] canvas.sprite');
@@ -2506,6 +2528,7 @@
           removeEventListener("keydown", kd, true); removeEventListener("keyup", ku, true);
           movers.forEach(m => { m.el.style.transform = ""; m.el.style.transition = ""; });
           if (icon) icon.style.visibility = "";
+          document.body.classList.remove("climbing");
           movers = []; textLines = []; solids = []; p = null;
           document.documentElement.style.scrollBehavior = "";
           extraEl.innerHTML = "";
@@ -2539,10 +2562,10 @@
             const b = { id: el, x1: r.left, x2: r.right, y: r.top + sy, y2: r.bottom + sy };
             blocks.push(b); list.push(b);
           }
-          // the line between each pair of sections: a full-width, one-way platform
-          // (jump up through it from below; once you're on top you can't fall back through)
+          // the line between each pair of sections: one-way platform pieces with gaps between them
+          // (jump up through it from below; land on a piece, or drop through a gap)
           const lines = sectionsOf().slice(1).map(s => s.top);
-          lines.forEach((y, i) => list.push({ id: "line" + i, x1: -1e5, x2: 1e5, y }));
+          lines.forEach((y, i) => (lineSegs[i] || []).forEach((s, j) => list.push({ id: "line" + i + "_" + j, x1: s.x1, x2: s.x2, y })));
           const find = id => list.find(o => o.id === id);
 
           if (!won) {
@@ -2652,7 +2675,7 @@
           // section lines, in the page's current colors
           const cs = getComputedStyle(document.body);
           const c = { edge: cs.getPropertyValue("--win-edge").trim() };
-          for (const y of lines) drawLine(y, sy2, c);
+          lines.forEach((y, i) => drawLine(i, y, sy2, c));
 
           // the hero
           const vx = Math.round(p.x), vy = Math.round(p.y - sy2);
