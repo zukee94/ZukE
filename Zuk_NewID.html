@@ -2376,8 +2376,8 @@
       const RUN_A = [...IDLE.slice(0, 8), ".sBBBnBBB...", "..BBBnBBBs..", "..BBBBBBB...", "..GGGGGGG...", ".GGG...GGG..", "kww.....kww."];
       const RUN_B = [...IDLE.slice(0, 8), "..BBBnBBBs..", ".sBBBnBBB...", "..BBBBBBB...", "..GGGGGGG...", "...GGGGG....", "...kwwww...."];
       const JUMP = [...IDLE.slice(0, 6), "s..sssss..s.", "sBBBBBBBBBs.", "..BBBnBBB...", "..BBBnBBB...", "..BBBBBBB...", "..GGGGGGG...", "..GG...GG...", ".kww...kww.."];
-      // things with a visible outline are platforms (card tops, buttons, badges); text is added separately
-      const PLAT_SEL = "header .win, header .btn, section .win, section .badge";
+      // things with a visible outline are platforms (card tops, buttons, badges, skill bars); text is added separately
+      const PLAT_SEL = "header .win, header .btn, section .win, section .badge, section .bar";
       const MOVE_SEL = "header .intro, section .win.card, section .plat-card, section .fav";
       const SOLID_SEL = "section canvas.sprite, section .photo svg"; // icons: floor and wall
       const GRAV = 0.6, MAX_FALL = 18, MAX_RUN = 10;
