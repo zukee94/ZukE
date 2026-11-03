@@ -2367,7 +2367,7 @@
     // ================= DIV CLIMBER =================
     // A platformer on the page itself: the tops of cards, headings and text are platforms,
     // the cards slide side to side, and the goal is the PRESS START button at the very top.
-    // Extra moving platforms fill the empty sides so every gap can be cleared.
+    // Every line of text is a platform too, so you can climb up through the cards' text.
     // Running faster makes jumps higher, fast mid-air wall hits bounce you back up,
     // and there's a double jump. No fail state: a fall lands on the footer.
     games.climber = (() => {
@@ -2376,13 +2376,14 @@
       const RUN_A = [...IDLE.slice(0, 8), ".sBBBnBBB...", "..BBBnBBBs..", "..BBBBBBB...", "..GGGGGGG...", ".GGG...GGG..", "kww.....kww."];
       const RUN_B = [...IDLE.slice(0, 8), "..BBBnBBBs..", ".sBBBnBBB...", "..BBBBBBB...", "..GGGGGGG...", "...GGGGG....", "...kwwww...."];
       const JUMP = [...IDLE.slice(0, 6), "s..sssss..s.", "sBBBBBBBBBs.", "..BBBnBBB...", "..BBBnBBB...", "..BBBBBBB...", "..GGGGGGG...", "..GG...GG...", ".kww...kww.."];
-      const PLAT_SEL = "header .tag, header h1, header .subtitle, header .win, header .btn, section .win, section h2, section h3, section .lede, section .badge, section .stat, section .bio, section .id-meta, footer .end, footer p";
+      // besides the text itself, only things with a visible outline are platforms (card tops, buttons, badges)
+      const PLAT_SEL = "header .win, header .btn, section .win, section .badge";
       const MOVE_SEL = "header .intro, section .win.card, section .plat-card, section .fav";
       const GRAV = 0.6, MAX_FALL = 18, MAX_RUN = 10;
       const WALL_BOUNCE_SPEED = 6; // mid-air speed needed to bounce off a wall
       const extraEl = $("mgExtra");
       const keys = { left: false, right: false, jump: false, pressed: false };
-      let p = null, plats = [], movers = [], sides = [], btn = null, won = false, frameNo = 0, startTime = 0;
+      let p = null, plats = [], movers = [], textLines = [], btn = null, won = false, frameNo = 0, startTime = 0;
 
       function onKey(e, isDown) {
         const k = e.key;
@@ -2403,39 +2404,38 @@
       const sectionsOf = () => [document.querySelector("header.hero"), ...document.querySelectorAll("body > section"), document.querySelector("body > footer")]
         .map(el => { const r = el.getBoundingClientRect(); return { el, top: r.top + scrollY, bottom: r.bottom + scrollY }; });
 
-      // Side platforms: one roughly every 100-125px of height from the footer to the top,
-      // 15-60px wide, in the empty gutter on ONE side per section (the side switches each section)
-      function buildSides() {
-        sides = [];
-        const wrap = document.querySelector("section .wrap").getBoundingClientRect();
-        const gutter = Math.max(0, wrap.left);
-        const secs = sectionsOf();
-        let side = Math.random() < 0.5 ? -1 : 1;
-        const sideOf = new Map(secs.map(s => [s, side = -side]));
-        for (let y = floorY() - 110; y > 90; y -= 100 + Math.random() * 25) {
-          const sec = secs.find(s => y >= s.top && y < s.bottom) || secs[0];
-          const sSide = sideOf.get(sec);
-          const w = Math.round(15 + Math.random() * 45);
-          const baseX = sSide < 0 ? Math.max(4, gutter / 2 - w / 2) : innerWidth - Math.max(4, gutter / 2 - w / 2) - w;
-          const amp = Math.min(46, Math.max(20, gutter - w / 2)); // how far it glides
-          sides.push({ side: sSide, y, w, baseX, amp, speed: 0.5 + Math.random() * 0.9, phase: Math.random() * 6.28, bob: 3 + Math.random() * 5 });
+      // Every line of visible text is a platform, measured character by character so it runs only
+      // from the first to the last real character on the line (no spaces, margins or empty box area).
+      // Measured once at the start with the cards at rest; each line remembers which sliding card
+      // it's in, so it moves along with it.
+      function buildTextLines() {
+        textLines = [];
+        const range = document.createRange();
+        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+          acceptNode: n => n.textContent.trim() && n.parentElement && n.parentElement.closest("header, section, footer")
+            ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT
+        });
+        const sy = scrollY;
+        for (let n; (n = walker.nextNode());) {
+          const parent = n.parentElement, cs = getComputedStyle(parent);
+          if (cs.visibility === "hidden" || cs.display === "none") continue;
+          const mover = movers.find(m => m.el.contains(parent)) || null;
+          const em = parseFloat(cs.fontSize) || 16;
+          const text = n.textContent;
+          for (let i = 0; i < text.length; i++) {
+            if (/\s/.test(text[i])) continue; // spaces are not platforms
+            range.setStart(n, i); range.setEnd(n, i + 1);
+            const r = range.getBoundingClientRect();
+            if (r.width === 0 || r.height === 0) continue;
+            // stand on the top of the letters, not the invisible top of the line box
+            const top = r.top + Math.max(0, (r.height - em) / 2) + em * 0.18 + sy;
+            // characters on the same line join into one platform; a gap wider than a space splits it
+            const prev = textLines[textLines.length - 1];
+            if (prev && prev.mover === mover && Math.abs(prev.y - top) < em * 0.4 && r.left - prev.x2 <= em * 0.7 && r.left >= prev.x1) {
+              prev.x2 = Math.max(prev.x2, r.right); prev.y = Math.min(prev.y, top);
+            } else textLines.push({ x1: r.left, x2: r.right, y: top, mover });
+          }
         }
-      }
-      function sideRect(o, tt) {
-        const x = o.baseX + Math.sin(tt * o.speed + o.phase) * o.amp * (o.side < 0 ? 0.5 : -0.5) + (o.side < 0 ? o.amp * 0.5 : -o.amp * 0.5);
-        return { x1: x, x2: x + o.w, y: o.y + Math.sin(tt * o.speed * 1.3 + o.phase) * o.bob };
-      }
-      // drawn like a tiny card (.win): same fill, light border, dark inner edge, dark outline
-      // and drop shadow, using the page's live colors so it follows Zuk Mode too
-      function drawSide(r, sy, c) {
-        const x = Math.round(r.x1), y = Math.round(r.y - sy), w = Math.round(r.x2 - r.x1), h = 16;
-        if (y < -24 || y > innerHeight + 24) return;
-        ctx.fillStyle = "rgba(0, 0, 0, .4)"; ctx.fillRect(x, y + h + 2, w, 5);             // drop shadow
-        ctx.fillStyle = c.shadow; ctx.fillRect(x - 2, y - 2, w + 4, h + 4);                 // outer outline
-        ctx.fillStyle = c.edge;   ctx.fillRect(x + 1, y, w - 2, h); ctx.fillRect(x, y + 1, w, h - 2); // light border, rounded corners
-        ctx.fillStyle = c.inset;  ctx.fillRect(x + 3, y + 3, w - 6, h - 6);                 // dark inner edge
-        ctx.fillStyle = c.fill;   ctx.fillRect(x + 5, y + 5, w - 10, h - 10);               // card fill
-        ctx.fillStyle = "rgba(255, 255, 255, .14)"; ctx.fillRect(x + 5, y + 5, w - 10, 2);  // top highlight
       }
       // the boundary between two sections: a thin white line you can land on
       function drawLine(y, sy, c) {
@@ -2470,7 +2470,8 @@
           plats = [...document.querySelectorAll(PLAT_SEL)];
           btn = document.querySelector("header .btn");
           movers = [...document.querySelectorAll(MOVE_SEL)].map(el => ({ el, amp: 30 + Math.random() * 50, speed: 0.6 + Math.random() * 0.9, phase: Math.random() * Math.PI * 2 }));
-          buildSides();
+          movers.forEach(m => { m.dx = 0; m.el.style.transform = ""; });
+          buildTextLines();
           document.documentElement.style.scrollBehavior = "auto";
           // start on the footer floor
           p = { x: innerWidth / 2 - W / 2, y: floorY() - H, vx: 0, vy: 0, ground: { floor: true }, groundX: 0, coyote: 0, buffer: 0,
@@ -2483,7 +2484,7 @@
         stop() {
           removeEventListener("keydown", kd, true); removeEventListener("keyup", ku, true);
           movers.forEach(m => { m.el.style.transform = ""; });
-          movers = []; sides = []; p = null;
+          movers = []; textLines = []; p = null;
           document.documentElement.style.scrollBehavior = "";
           extraEl.innerHTML = "";
         },
@@ -2492,7 +2493,10 @@
           frameNo++;
           const tt = performance.now() / 1000;
           // slide the cards side to side
-          for (const m of movers) m.el.style.transform = `translateX(${Math.round(Math.sin(tt * m.speed + m.phase) * m.amp)}px)`;
+          for (const m of movers) {
+            m.dx = Math.round(Math.sin(tt * m.speed + m.phase) * m.amp);
+            m.el.style.transform = `translateX(${m.dx}px)`;
+          }
           // every platform top this frame, in page coordinates; `id` says which one it is
           const sy = scrollY;
           const list = [];
@@ -2500,7 +2504,11 @@
             const r = el.getBoundingClientRect();
             if (r.width > 0) list.push({ id: el, x1: r.left, x2: r.right, y: r.top + sy });
           }
-          for (const o of sides) list.push({ id: o, ...sideRect(o, tt) });
+          // every line of text, shifted by its card's slide
+          for (const t of textLines) {
+            const dx = t.mover ? t.mover.dx : 0;
+            list.push({ id: t, x1: t.x1 + dx, x2: t.x2 + dx, y: t.y });
+          }
           // the line between each pair of sections: a full-width, one-way platform
           // (jump up through it from below; once you're on top you can't fall back through)
           const lines = sectionsOf().slice(1).map(s => s.top);
@@ -2596,7 +2604,6 @@
           const c = { fill: cs.getPropertyValue("--win").trim(), edge: cs.getPropertyValue("--win-edge").trim(),
                       inset: cs.getPropertyValue("--win-inset").trim(), shadow: cs.getPropertyValue("--shadow").trim() };
           for (const y of lines) drawLine(y, sy2, c);
-          for (const o of list) if (sides.includes(o.id)) drawSide(o, sy2, c);
 
           // the hero
           const vx = Math.round(p.x), vy = Math.round(p.y - sy2);
