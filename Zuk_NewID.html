@@ -347,6 +347,26 @@
   body.zuk-mode .toast { bottom: 100px; }
   body.zuk-mode footer { padding-bottom: 130px; }
 
+  /* ---------- Pixel ship: shoots the cards, one pixel per hit ---------- */
+  .ship-layer { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 58; pointer-events: none; }
+  /* a destroyed pixel: painted in the section's background color so it reads as a hole */
+  .hole { position: absolute; z-index: 3; pointer-events: none; }
+  section:nth-of-type(odd) .hole { background: var(--night); }
+  section:nth-of-type(even) .hole { background: var(--night-2); }
+  .ship-hud {
+    position: fixed; top: 74px; right: 12px; z-index: 59; display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; font-family: "Press Start 2P", monospace; font-size: 8px; line-height: 1.7; color: var(--muted);
+  }
+  .ship-hud b { color: var(--gold); font-weight: normal; font-size: 10px; }
+  .ship-hud button {
+    font-family: inherit; font-size: 9px; line-height: 1; padding: 7px 8px; border: 0; cursor: pointer;
+    color: #2a0420; background: var(--pink); box-shadow: 0 0 0 2px var(--shadow), 0 4px 0 var(--shadow);
+  }
+  .ship-hud button:active { transform: translateY(3px); box-shadow: 0 0 0 2px var(--shadow); }
+  .ship-hud.off .count { display: none; }
+  /* the ship needs a mouse, so it's hidden on touch screens and small windows */
+  @media (hover: none), (max-width: 700px) { .ship-layer, .ship-hud { display: none !important; } }
+
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
     *, *::before { animation: none !important; transition: none !important; }
@@ -582,6 +602,10 @@
   </div>
 </footer>
 
+<div class="ship-hud win" id="shipHud">
+  <div class="count">PIXELS<br>DESTROYED <b id="shipCount">0000</b></div>
+  <button id="shipToggle" type="button" aria-label="Turn the ship off">✕</button>
+</div>
 <div class="cheat win" id="cheat" role="alert"><div class="big">CHEAT ACTIVATED</div><div class="small">ZUK MODE ON<br>RAINBOW STATS · FIREWORKS · GLITCHES</div></div>
 <button class="dismiss" id="dismiss" type="button">DISMISS ZUK MODE</button>
 <div class="toast win" id="toast" role="status" aria-live="polite"><canvas class="sprite" data-sprite="star"></canvas><div><div class="t1">ACHIEVEMENT UNLOCKED</div><div class="t2" id="toastText"></div></div></div>
@@ -1327,6 +1351,148 @@
     taps++; clearTimeout(tapTimer); tapTimer = setTimeout(() => taps = 0, 1500);
     if (taps >= 5) { taps = 0; zukMode(); }
   });
+
+  // ---------- Pixel ship: sits on the right edge, follows the cursor up and down,
+  // fires once a second, and knocks one pixel out of whichever card it hits ----------
+  (() => {
+    const PX = 8, SCALE = 3, FIRE_MS = 1000, SPEED = 16;
+    const SHIP = [
+      "......XX.",
+      "....XXXX.",
+      "..XXXXXX.",
+      "XXXXWWXXo",
+      "..YYYYYY.",
+      "....YYYY.",
+      "......YY."
+    ];
+    const COLORS = { X: "#ffd34d", Y: "#c98a1f", W: "#ffffff", o: "#ff9a1f" };
+    const usable = matchMedia("(hover: hover) and (min-width: 701px)");
+    const layer = document.createElement("canvas");
+    layer.className = "ship-layer"; layer.setAttribute("aria-hidden", "true");
+    document.body.appendChild(layer);
+    const ctx = layer.getContext("2d");
+    const hud = document.getElementById("shipHud"), count = document.getElementById("shipCount");
+    const toggle = document.getElementById("shipToggle");
+
+    const damage = new WeakMap(); // card -> destroyed pixels per row, counted in from the right edge
+    const ship = { y: innerHeight / 2, target: innerHeight / 2 };
+    let on = false, raf = 0, fireTimer = 0, destroyed = 0, flash = 0, frameNo = 0;
+    let bullets = [], debris = [];
+
+    const size = () => { layer.width = innerWidth; layer.height = innerHeight; };
+    size(); addEventListener("resize", size);
+    addEventListener("pointermove", e => { ship.target = e.clientY; }, { passive: true });
+    const shipW = SHIP[0].length * SCALE, shipH = SHIP.length * SCALE;
+    const shipX = () => innerWidth - 14 - shipW;
+
+    function fire() {
+      if (document.hidden) return;
+      // prev starts at the screen edge, so a card that reaches under the ship still gets hit
+      bullets.push({ x: shipX(), prev: innerWidth, y: Math.round(ship.y) });
+      flash = 4;
+    }
+
+    // The first card whose exposed right face the bullet crossed this frame
+    function findHit(b, prevX) {
+      let best = null;
+      for (const card of document.querySelectorAll("section .win")) {
+        const r = card.getBoundingClientRect();
+        if (b.y < r.top || b.y >= r.bottom || r.bottom < 0 || r.top > innerHeight) continue;
+        const rows = damage.get(card) || [];
+        const row = Math.floor((b.y - r.top) / PX), eroded = rows[row] || 0;
+        if (eroded >= Math.ceil(r.width / PX)) continue; // this row is already gone
+        const face = r.right - eroded * PX;
+        if (prevX >= face && b.x <= face && (!best || face > best.face)) best = { card, r, rows, row, eroded, face };
+      }
+      return best;
+    }
+
+    function destroyPixel({ card, r, rows, row, eroded, face }) {
+      rows[row] = eroded + 1; damage.set(card, rows);
+      const border = parseFloat(getComputedStyle(card).borderTopWidth) || 0;
+      const hole = document.createElement("i");
+      hole.className = "hole";
+      hole.style.right = (eroded * PX - border) + "px";
+      hole.style.top = (row * PX - border) + "px";
+      hole.style.width = PX + "px";
+      hole.style.height = Math.min(PX, r.height - row * PX) + "px";
+      card.appendChild(hole);
+      destroyed++;
+      count.textContent = String(destroyed).padStart(4, "0");
+      // the knocked-out pixel breaks into debris
+      const color = getComputedStyle(card).backgroundColor;
+      for (let i = 0; i < 6; i++) {
+        debris.push({ x: face - PX / 2, y: r.top + row * PX + Math.random() * PX,
+          vx: 1 + Math.random() * 3, vy: -2.5 + Math.random() * 3, life: 18 + Math.random() * 18,
+          color: i < 2 ? "#ffffff" : color });
+      }
+    }
+
+    function frame() {
+      frameNo++;
+      ctx.clearRect(0, 0, layer.width, layer.height);
+      ship.y += (ship.target - ship.y) * 0.2;
+      ship.y = Math.max(shipH, Math.min(innerHeight - shipH, ship.y));
+
+      bullets = bullets.filter(b => {
+        const prevX = b.prev; b.x -= SPEED; b.prev = b.x;
+        const h = findHit(b, prevX);
+        if (h) { destroyPixel(h); return false; }
+        return b.x > -20;
+      });
+      for (const b of bullets) {
+        ctx.fillStyle = "#ffd34d"; ctx.fillRect(b.x, b.y - 1, 12, 3);
+        ctx.fillStyle = "#ffffff"; ctx.fillRect(b.x, b.y - 1, 3, 3);
+      }
+
+      debris = debris.filter(p => p.life > 0);
+      for (const p of debris) {
+        p.life--; p.vy += 0.18; p.x += p.vx; p.y += p.vy;
+        ctx.fillStyle = p.color; ctx.fillRect(Math.round(p.x), Math.round(p.y), 3, 3);
+      }
+
+      // ship, with a flickering engine and a muzzle flash when it fires
+      const sx = shipX(), sy = Math.round(ship.y - shipH / 2);
+      SHIP.forEach((row, y) => [...row].forEach((ch, x) => {
+        if (!COLORS[ch] || (ch === "o" && frameNo % 6 < 3)) return;
+        ctx.fillStyle = COLORS[ch]; ctx.fillRect(sx + x * SCALE, sy + y * SCALE, SCALE, SCALE);
+      }));
+      if (flash > 0) { flash--; ctx.fillStyle = "#ffffff"; ctx.fillRect(sx - 6, Math.round(ship.y) - 3, 6, 6); }
+
+      raf = requestAnimationFrame(frame);
+    }
+
+    function start() {
+      if (on || !usable.matches) return;
+      on = true;
+      layer.style.display = "";
+      hud.classList.remove("off");
+      toggle.textContent = "✕"; toggle.setAttribute("aria-label", "Turn the ship off");
+      fireTimer = setInterval(fire, FIRE_MS);
+      raf = requestAnimationFrame(frame);
+    }
+    function stop() {
+      on = false;
+      clearInterval(fireTimer); cancelAnimationFrame(raf);
+      bullets = []; debris = [];
+      ctx.clearRect(0, 0, layer.width, layer.height);
+      layer.style.display = "none";
+      hud.classList.add("off");
+      toggle.textContent = "▶ SHIP"; toggle.setAttribute("aria-label", "Turn the ship on");
+    }
+    // wantOn = what the visitor chose; the ship also needs a mouse and a wide enough window
+    let pref = null;
+    try { pref = localStorage.getItem("zukShip"); } catch (e) { /* storage unavailable */ }
+    let wantOn = pref === "on" || (pref !== "off" && !reduceMotion);
+    toggle.addEventListener("click", () => {
+      wantOn = !on;
+      wantOn ? start() : stop();
+      try { localStorage.setItem("zukShip", wantOn ? "on" : "off"); } catch (e) { /* storage unavailable */ }
+    });
+    usable.addEventListener("change", () => { usable.matches && wantOn ? start() : stop(); });
+    stop();
+    if (wantOn) start();
+  })();
 </script>
 </body>
 </html>
