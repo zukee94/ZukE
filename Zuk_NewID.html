@@ -364,8 +364,9 @@
   nav a { display: inline-block; }
   /* flamethrower: scorched pixels lose their color */
   .scorch { position: absolute; z-index: 2; pointer-events: none; background: rgba(40, 36, 44, .3); backdrop-filter: grayscale(1) brightness(.75); -webkit-backdrop-filter: grayscale(1) brightness(.75); }
-  /* Pixel Painter: a painted pixel */
-  .paint { position: absolute; z-index: 3; pointer-events: none; }
+  /* Pixel Painter: a painted pixel only shifts the hue of what's underneath,
+     so the original shading, text and pixel detail still show through */
+  .paint { position: absolute; z-index: 3; pointer-events: none; mix-blend-mode: hue; }
   /* hammer cracks */
   .cracks { position: absolute; z-index: 4; pointer-events: none; overflow: hidden; }
   .crack { fill: none; stroke: var(--shadow); stroke-linejoin: miter; stroke-linecap: square; }
@@ -386,6 +387,7 @@
     box-shadow: 0 0 0 2px var(--shadow), 0 4px 0 var(--shadow);
   }
   .mg-tools button canvas { width: 26px; height: 26px; }
+  .mg-tools button.cur { outline: 2px dashed var(--gold); outline-offset: 2px; }
   .mg-tools button.on { color: #2b1300; background: var(--gold); box-shadow: inset 0 2px 0 #fff1a8, inset 0 -2px 0 var(--rust), 0 0 0 2px var(--shadow), 0 4px 0 var(--shadow); }
   .mg-actions { display: flex; gap: 8px; }
   .mg-actions button {
@@ -649,7 +651,7 @@
         <canvas class="sprite" data-sprite="worm"></canvas>
         <div>
           <h3>PAGE WORM</h3>
-          <p>A hungry pixel worm chases your cursor and eats everything it crawls over. The more it eats, the longer it gets. Ants are a snack.</p>
+          <p>A hungry pixel worm slowly chases your cursor and eats everything it crawls over. Hold the mouse button to make it hurry. Ants are a snack.</p>
           <span class="badge gold">▶ PLAY</span>
         </div>
       </button>
@@ -657,7 +659,7 @@
         <canvas class="sprite" data-sprite="brush"></canvas>
         <div>
           <h3>PIXEL PAINTER</h3>
-          <p>Pick a color and paint over the page, pixel by pixel. Something calm for your soul after all that wrecking.</p>
+          <p>Pick a color and re-tint the page, pixel by pixel, without losing any of its detail. Something calm for your soul after all that wrecking.</p>
           <span class="badge gold">▶ PLAY</span>
         </div>
       </button>
@@ -1039,6 +1041,21 @@
       "rrr.RR.mm",
       ".o.o...o.",
       "o...o...o"
+    ],
+    // RANDOM tool icon: a die
+    dice: [
+      ".WWWWWWWWWW.",
+      "WwwwwwwwwwwW",
+      "WwkkwwwwwwwW",
+      "WwkkwwwwwwwW",
+      "WwwwwwwwwwwW",
+      "WwwwwkkwwwwW",
+      "WwwwwkkwwwwW",
+      "WwwwwwwwwwwW",
+      "WwwwwwwwkkwW",
+      "WwwwwwwwkkwW",
+      "WwwwwwwwwwwW",
+      ".WWWWWWWWWW."
     ],
     // Page Worm icon
     worm: [
@@ -1868,9 +1885,29 @@
       layer.className = "wreck-layer"; layer.setAttribute("aria-hidden", "true");
       const TOOLS = [
         { id: "hammer", label: "HAMMER" }, { id: "blaster", label: "BLAST" }, { id: "flame", label: "FLAME" },
-        { id: "laser", label: "LASER" }, { id: "bomb", label: "BOMB" }, { id: "ant", label: "ANT" }
+        { id: "laser", label: "LASER" }, { id: "bomb", label: "BOMB" }, { id: "ant", label: "ANT" },
+        { id: "dice", label: "RANDOM" }
       ];
+      const REAL_TOOLS = TOOLS.filter(t => t.id !== "dice").map(t => t.id);
       let tool = "hammer", down = false, last = null, holdTimer = 0;
+      // RANDOM: the active tool switches to a different one every 1.2-4 seconds
+      let randomMode = false, randomTimer = 0;
+      function startHold() {
+        clearInterval(holdTimer);
+        if (!down) return;
+        if (tool === "blaster") holdTimer = setInterval(blast, 60);
+        else if (tool === "flame") holdTimer = setInterval(burn, 45);
+      }
+      function switchTool(next) { tool = next; anim = 0; last = null; startHold(); renderTools(); }
+      function scheduleRandom() {
+        clearTimeout(randomTimer);
+        if (!randomMode) return;
+        randomTimer = setTimeout(() => {
+          const options = REAL_TOOLS.filter(id => id !== tool);
+          switchTool(options[Math.floor(Math.random() * options.length)]);
+          scheduleRandom();
+        }, 1200 + Math.random() * 2800);
+      }
       const pointer = { x: -100, y: -100, inside: false };
       let anim = 99, recoil = 0, frameNo = 0; // anim = frames since the last click
 
@@ -2013,8 +2050,8 @@
         else if (tool === "bomb") dropBomb(x, y);
         else if (tool === "laser") laserTo(x, y);
         else if (tool === "ant") addAnt(x, y);
-        else if (tool === "blaster") { blast(); holdTimer = setInterval(blast, 60); }
-        else if (tool === "flame") { burn(); holdTimer = setInterval(burn, 45); }
+        else if (tool === "blaster") { blast(); startHold(); }
+        else if (tool === "flame") { burn(); startHold(); }
       }
       function onMove(e) {
         Object.assign(pointer, { x: e.clientX, y: e.clientY, inside: true });
@@ -2069,11 +2106,23 @@
         toolsEl.innerHTML = "";
         for (const t of TOOLS) {
           const b = document.createElement("button");
-          b.type = "button"; b.className = t.id === tool ? "on" : "";
-          b.setAttribute("aria-pressed", t.id === tool);
+          const on = t.id === "dice" ? randomMode : (!randomMode && t.id === tool);
+          // in RANDOM mode, the tool currently in hand gets a dashed outline
+          b.type = "button"; b.className = (on ? "on" : "") + (randomMode && t.id === tool ? " cur" : "");
+          b.setAttribute("aria-pressed", on);
           b.appendChild(sprite(t.id));
           b.appendChild(document.createTextNode(t.label));
-          b.addEventListener("click", () => { tool = t.id; anim = 99; renderTools(); });
+          b.addEventListener("click", () => {
+            if (t.id === "dice") {
+              randomMode = true;
+              const options = REAL_TOOLS.filter(id => id !== tool);
+              switchTool(options[Math.floor(Math.random() * options.length)]);
+              scheduleRandom();
+            } else {
+              randomMode = false; clearTimeout(randomTimer);
+              tool = t.id; anim = 99; renderTools();
+            }
+          });
           toolsEl.appendChild(b);
         }
       }
@@ -2089,7 +2138,7 @@
           layer.addEventListener("pointerleave", onLeave);
           renderTools();
         },
-        stop() { onUp(); onLeave(); layer.remove(); toolsEl.innerHTML = ""; },
+        stop() { onUp(); onLeave(); randomMode = false; clearTimeout(randomTimer); layer.remove(); toolsEl.innerHTML = ""; },
         frame: drawCursor
       };
     })();
@@ -2099,17 +2148,29 @@
     games.worm = (() => {
       const pointer = { x: innerWidth / 2, y: innerHeight / 2 };
       const follow = e => { pointer.x = e.clientX; pointer.y = e.clientY; };
-      let pts = [], len = 40, ang = 0, t = 0;
-      const SPEED = 2.6, TURN = 0.11, MAX_LEN = 600;
+      // crawls slowly; holding the mouse button down makes it speed up
+      const SLOW = 1.2, FAST = 4.2, TURN = 0.11, MAX_LEN = 600, SPACING = 2.6;
+      let pts = [], len = 40, ang = 0, t = 0, speed = SLOW, pressed = false;
+      const press = e => { if (e.button === 0) pressed = true; };
+      const release = () => { pressed = false; };
       return {
         name: "PAGE WORM",
         canStart: () => hasMouse.matches || "Page Worm needs a mouse",
         start() {
           addEventListener("pointermove", follow, { passive: true });
+          addEventListener("pointerdown", press);
+          addEventListener("pointerup", release);
+          addEventListener("blur", release);
           // it crawls in from the bottom-left corner
-          pts = [{ x: 20, y: innerHeight - 20 }]; len = 40; ang = -Math.PI / 4; t = 0;
+          pts = [{ x: 20, y: innerHeight - 20 }]; len = 40; ang = -Math.PI / 4; t = 0; speed = SLOW; pressed = false;
         },
-        stop() { removeEventListener("pointermove", follow); pts = []; },
+        stop() {
+          removeEventListener("pointermove", follow);
+          removeEventListener("pointerdown", press);
+          removeEventListener("pointerup", release);
+          removeEventListener("blur", release);
+          pts = [];
+        },
         frame() {
           t++;
           const head = pts[0];
@@ -2117,10 +2178,18 @@
           let want = Math.atan2(pointer.y - head.y, pointer.x - head.x) - ang;
           want = Math.atan2(Math.sin(want), Math.cos(want));
           ang += Math.max(-TURN, Math.min(TURN, want)) + Math.sin(t * 0.25) * 0.05;
+          // ease toward the target speed so it surges forward instead of jumping
+          speed += ((pressed ? FAST : SLOW) - speed) * 0.08;
           const close = Math.hypot(pointer.x - head.x, pointer.y - head.y) < 6;
-          const next = close ? { ...head } : { x: head.x + Math.cos(ang) * SPEED, y: head.y + Math.sin(ang) * SPEED };
-          pts.unshift(next);
-          if (pts.length > len) pts.length = len;
+          const next = close ? { ...head } : { x: head.x + Math.cos(ang) * speed, y: head.y + Math.sin(ang) * speed };
+          if (!close) pts.unshift(next);
+          // trim the body by distance, so it's the same length whatever its speed
+          const maxDist = len * SPACING;
+          let dist = 0;
+          for (let i = 1; i < pts.length; i++) {
+            dist += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+            if (dist > maxDist) { pts.length = i + 1; break; }
+          }
           // eat whatever is under the head
           if (destroyAt(next.x, next.y)) len = Math.min(MAX_LEN, len + 3);
           for (const a of antsNear(next.x, next.y, 10)) {
@@ -2128,10 +2197,16 @@
             len = Math.min(MAX_LEN, len + 15);
             for (let i = 0; i < 6; i++) particles.push({ x: a.x, y: a.y, vx: (Math.random() - 0.5) * 3, vy: -1 - Math.random() * 2, g: 0.15, life: 10 + Math.random() * 10, color: "#ff5a3c" });
           }
-          // body: segments every 3 points, tapering to the tail, with a darker stripe pattern
-          for (let i = pts.length - 1; i >= 3; i -= 3) {
-            const p = pts[i], k = 1 - i / pts.length, s = Math.max(4, Math.round((4 + k * 6) / 2) * 2);
-            ctx.fillStyle = (i / 3) % 4 < 1 ? "#1fa86a" : "#2fe08a";
+          // body: a segment every 7px along the path, tapering to the tail, with a darker stripe pattern
+          const segs = [];
+          let along = 0, nextSeg = 7;
+          for (let i = 1; i < pts.length; i++) {
+            along += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+            if (along >= nextSeg) { segs.push(pts[i]); nextSeg += 7; }
+          }
+          for (let i = segs.length - 1; i >= 0; i--) {
+            const p = segs[i], k = 1 - i / Math.max(1, segs.length), s = Math.max(4, Math.round((4 + k * 6) / 2) * 2);
+            ctx.fillStyle = i % 4 < 1 ? "#1fa86a" : "#2fe08a";
             ctx.fillRect(Math.round(p.x - s / 2), Math.round(p.y - s / 2), s, s);
           }
           // head with eyes looking where it's going
@@ -2151,7 +2226,8 @@
     games.painter = (() => {
       const layer = document.createElement("div");
       layer.className = "wreck-layer"; layer.setAttribute("aria-hidden", "true");
-      const COLORS = ["#ff4a5e", "#ff9a1f", "#ffd34d", "#2fe08a", "#4fb8ff", "#a77bff", "#ff7ad9", "#ffffff", "#14101f"];
+      // hues only: white and black have no hue, so they aren't offered
+      const COLORS = ["#ff2b45", "#ff8a00", "#ffd400", "#7dff00", "#00e676", "#00d4ff", "#2f6bff", "#a64dff", "#ff3dd6"];
       let color = COLORS[2], erase = false, down = false, last = null, dab = 99, frameNo = 0;
       const pointer = { x: -100, y: -100, inside: false };
 
