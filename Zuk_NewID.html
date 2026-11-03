@@ -347,25 +347,54 @@
   body.zuk-mode .toast { bottom: 100px; }
   body.zuk-mode footer { padding-bottom: 130px; }
 
-  /* ---------- Pixel ship: shoots the cards, one pixel per hit ---------- */
-  .ship-layer { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 58; pointer-events: none; }
-  /* a destroyed pixel: painted in the section's background color so it reads as a hole */
-  .hole { position: absolute; z-index: 3; pointer-events: none; }
-  section:nth-of-type(odd) .hole { background: var(--night); }
-  section:nth-of-type(even) .hole { background: var(--night-2); }
-  .ship-hud {
-    position: fixed; top: 74px; right: 12px; z-index: 59; display: flex; align-items: center; gap: 10px;
-    padding: 8px 10px; font-family: "Press Start 2P", monospace; font-size: 8px; line-height: 1.7; color: var(--muted);
+  /* ---------- Minigames for the Soul ---------- */
+  /* game cards are buttons; reset the browser's button look */
+  .mini { font: inherit; color: inherit; text-align: left; width: 100%; cursor: pointer; }
+  .mini .badge { margin-top: 12px; }
+  .mini.playing { outline: 3px dashed var(--gold); outline-offset: 5px; }
+  .mini.playing .badge { color: #062a1c; background: var(--green); box-shadow: inset 0 2px 0 #9dffc9, inset 0 -2px 0 #128a52, 0 -3px 0 var(--shadow), 0 3px 0 var(--shadow), -3px 0 0 var(--shadow), 3px 0 0 var(--shadow), 0 6px 0 var(--shadow); }
+  /* shared effects layer (ship, shots, debris, bombs, laser) and the click-catcher for Page Wrecker */
+  .fx-layer { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 58; pointer-events: none; }
+  /* the tool itself is drawn as the cursor, so the system cursor is hidden */
+  .wreck-layer { position: fixed; inset: 0; z-index: 57; cursor: none; touch-action: none; }
+  /* destroyed pixels are cut out with a mask, so the real background shows through.
+     Text blocks hug their text, so shots pass through empty space beside them. */
+  section .lede, section .sub-h, footer .end, footer p { width: fit-content; }
+  header .tag, header h1.name, header .subtitle, footer .end, footer p { width: fit-content; margin-left: auto; margin-right: auto; }
+  nav a { display: inline-block; }
+  /* flamethrower: scorched pixels lose their color */
+  .scorch { position: absolute; z-index: 2; pointer-events: none; background: rgba(40, 36, 44, .3); backdrop-filter: grayscale(1) brightness(.75); -webkit-backdrop-filter: grayscale(1) brightness(.75); }
+  /* Pixel Painter: a painted pixel */
+  .paint { position: absolute; z-index: 3; pointer-events: none; }
+  /* hammer cracks */
+  .cracks { position: absolute; z-index: 4; pointer-events: none; overflow: hidden; }
+  .crack { fill: none; stroke: var(--shadow); stroke-linejoin: miter; stroke-linecap: square; }
+  .crack-hl { fill: none; stroke: rgba(255, 255, 255, .3); stroke-width: 1; }
+  /* game HUD: counter, Page Wrecker tools, repair and exit */
+  .mg-hud {
+    position: fixed; top: 74px; right: 12px; z-index: 59; width: 200px; display: grid; gap: 10px;
+    padding: 12px; font-family: "Press Start 2P", monospace; font-size: 8px; line-height: 1.7; color: var(--muted);
   }
-  .ship-hud b { color: var(--gold); font-weight: normal; font-size: 10px; }
-  .ship-hud button {
-    font-family: inherit; font-size: 9px; line-height: 1; padding: 7px 8px; border: 0; cursor: pointer;
-    color: #2a0420; background: var(--pink); box-shadow: 0 0 0 2px var(--shadow), 0 4px 0 var(--shadow);
+  .mg-hud[hidden] { display: none; }
+  .mg-title { color: var(--gold); font-size: 9px; }
+  .mg-count b { color: var(--gold); font-weight: normal; font-size: 10px; }
+  .mg-tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+  .mg-tools:empty { display: none; }
+  .mg-tools button {
+    display: grid; justify-items: center; gap: 4px; padding: 6px 2px 5px; border: 0; cursor: pointer;
+    font-family: inherit; font-size: 6px; color: var(--muted); background: var(--win-inset);
+    box-shadow: 0 0 0 2px var(--shadow), 0 4px 0 var(--shadow);
   }
-  .ship-hud button:active { transform: translateY(3px); box-shadow: 0 0 0 2px var(--shadow); }
-  .ship-hud.off .count { display: none; }
-  /* the ship needs a mouse, so it's hidden on touch screens and small windows */
-  @media (hover: none), (max-width: 700px) { .ship-layer, .ship-hud { display: none !important; } }
+  .mg-tools button canvas { width: 26px; height: 26px; }
+  .mg-tools button.on { color: #2b1300; background: var(--gold); box-shadow: inset 0 2px 0 #fff1a8, inset 0 -2px 0 var(--rust), 0 0 0 2px var(--shadow), 0 4px 0 var(--shadow); }
+  .mg-actions { display: flex; gap: 8px; }
+  .mg-actions button {
+    flex: 1; padding: 8px 4px; border: 0; cursor: pointer; font-family: inherit; font-size: 8px;
+    box-shadow: 0 0 0 2px var(--shadow), 0 4px 0 var(--shadow);
+  }
+  .mg-actions button:active, .mg-tools button:active { transform: translateY(3px); box-shadow: 0 0 0 2px var(--shadow); }
+  #mgRepair { color: #062a1c; background: var(--teal); }
+  #mgExit { color: #2a0420; background: var(--pink); }
 
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
@@ -384,6 +413,7 @@
       <a href="#achievements">TROPHIES</a>
       <a href="#platinum">PLATINUM</a>
       <a href="#games">GAMES</a>
+      <a href="#minigames">MINIGAMES</a>
     </div>
   </div>
 </nav>
@@ -594,6 +624,47 @@
   </div>
 </section>
 
+<section id="minigames">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num win">06</span><h2 class="chrome">MINIGAMES FOR THE SOUL</h2></div>
+    <p class="lede">Click a game to start it. Every hit knocks a real pixel out of this page.</p>
+    <div class="grid2">
+      <button class="win card ach mini" type="button" data-game="invader">
+        <canvas class="sprite" data-sprite="ship"></canvas>
+        <div>
+          <h3>DIV INVADER</h3>
+          <p>A tiny ship on the right edge follows your cursor and fires four times a second. It can shoot away anything on this page except the background.</p>
+          <span class="badge gold">▶ PLAY</span>
+        </div>
+      </button>
+      <button class="win card ach mini" type="button" data-game="wrecker">
+        <canvas class="sprite" data-sprite="hammer"></canvas>
+        <div>
+          <h3>PAGE WRECKER</h3>
+          <p>Hammer, blaster, flamethrower, laser, bomb and ants. Pick a tool and take this page apart, one pixel at a time.</p>
+          <span class="badge gold">▶ PLAY</span>
+        </div>
+      </button>
+      <button class="win card ach mini" type="button" data-game="worm">
+        <canvas class="sprite" data-sprite="worm"></canvas>
+        <div>
+          <h3>PAGE WORM</h3>
+          <p>A hungry pixel worm chases your cursor and eats everything it crawls over. The more it eats, the longer it gets. Ants are a snack.</p>
+          <span class="badge gold">▶ PLAY</span>
+        </div>
+      </button>
+      <button class="win card ach mini" type="button" data-game="painter">
+        <canvas class="sprite" data-sprite="brush"></canvas>
+        <div>
+          <h3>PIXEL PAINTER</h3>
+          <p>Pick a color and paint over the page, pixel by pixel. Something calm for your soul after all that wrecking.</p>
+          <span class="badge gold">▶ PLAY</span>
+        </div>
+      </button>
+    </div>
+  </div>
+</section>
+
 <footer>
   <div class="wrap">
     <div class="end chrome">GAME OVER? NEVER.</div>
@@ -602,9 +673,14 @@
   </div>
 </footer>
 
-<div class="ship-hud win" id="shipHud">
-  <div class="count">PIXELS<br>DESTROYED <b id="shipCount">0000</b></div>
-  <button id="shipToggle" type="button" aria-label="Turn the ship off">✕</button>
+<div class="mg-hud win" id="mgHud" hidden>
+  <div class="mg-title" id="mgTitle">DIV INVADER</div>
+  <div class="mg-count">PIXELS DESTROYED <b id="mgCount">0000</b></div>
+  <div class="mg-tools" id="mgTools" role="toolbar" aria-label="Page Wrecker tools"></div>
+  <div class="mg-actions">
+    <button id="mgRepair" type="button">REPAIR</button>
+    <button id="mgExit" type="button">✕ EXIT</button>
+  </div>
 </div>
 <div class="cheat win" id="cheat" role="alert"><div class="big">CHEAT ACTIVATED</div><div class="small">ZUK MODE ON<br>RAINBOW STATS · FIREWORKS · GLITCHES</div></div>
 <button class="dismiss" id="dismiss" type="button">DISMISS ZUK MODE</button>
@@ -620,7 +696,8 @@
     e: "#c98a4b", E: "#8a5426", c: "#fff3c4", s: "#ffd4b0",
     d: "#e8b46a", D: "#b97a3a", X: "#2a2a3a", x: "#07070d", h: "#2a2f5a",
     A: "#dfe9f8", Q: "#a9bcd9", Z: "#6f82a8", J: "#140f3c", K: "#3a2a8a", L: "#6a8cff",
-    U: "#1b3fa8", O: "#2f6fe0", V: "#5aa6ff", I: "#a8dcff", H: "#f0faff"
+    U: "#1b3fa8", O: "#2f6fe0", V: "#5aa6ff", I: "#a8dcff", H: "#f0faff",
+    N: "#2fe08a", M: "#1fa86a"
   };
   const OUTLINE = [20, 16, 31];
 
@@ -890,6 +967,103 @@
       return rows;
     },
     // Assassin's Creed: hooded assassin figure
+    // Minigame icons
+    ship: [
+      "......YY.",
+      "....YYYY.",
+      "..YYYYYY.",
+      "YYYYwwYYo",
+      "..ooooYY.",
+      "....oooo.",
+      "......oo."
+    ],
+    hammer: [
+      "....GGGGGGGG....",
+      "...GWWWWWWWWG...",
+      "...GWggggggWG...",
+      "...GGGGGGGGGG...",
+      ".......EE.......",
+      ".......EE.......",
+      ".......EE.......",
+      ".......Ee.......",
+      ".......EE.......",
+      ".......EE.......",
+      ".......Ee.......",
+      ".......EE.......",
+      ".......EE.......",
+      "......GGGG......"
+    ],
+    blaster: [
+      "................",
+      "..GGGGGGGGGGG...",
+      ".GWWWWWWWWWWGrr.",
+      ".GggggggggggGRR.",
+      "..GGGGEEEE......",
+      "......EEEE......",
+      ".....EEEE.......",
+      ".....EEE........"
+    ],
+    bomb: [
+      "........y...",
+      ".......Y.y..",
+      "......E.....",
+      "....XXXX....",
+      "..XXXXXXXX..",
+      ".XXWXXXXXXX.",
+      ".XWXXXXXXXX.",
+      ".XXXXXXXXXX.",
+      ".XXXXXXXXXX.",
+      "..XXXXXXXX..",
+      "....XXXX...."
+    ],
+    laser: [
+      "GGGG............",
+      "GWWGrrrrrrrrrrrr",
+      "GWWGRRRRRRRRRRRR",
+      "GGGG............"
+    ],
+    // flamethrower: nozzle on the left, fuel tank on the right
+    flame: [
+      "..........RRR...",
+      ".........RrrrR..",
+      "GGGGGGGGGRrrrR..",
+      "GWWWWWWWGRRRRR..",
+      "GGGGGGGGGRRRRR..",
+      "......EE.RmmmR..",
+      "......EE..RRR..."
+    ],
+    // a small original ant, facing right
+    ant: [
+      "o...o...o",
+      ".o.o...o.",
+      "rrr.RR.mm",
+      ".o.o...o.",
+      "o...o...o"
+    ],
+    // Page Worm icon
+    worm: [
+      "..........NNNN..",
+      ".........NNwkNN.",
+      "..NNN...NNNNNN..",
+      ".NMNMN.NMN......",
+      "NM...MNMN.......",
+      "M.....MM........"
+    ],
+    // Pixel Painter brush: handle, metal band, red bristles (tip at the bottom left)
+    brush: [
+      "............EE..",
+      "...........EEE..",
+      "..........EEE...",
+      ".........EEE....",
+      "........EEE.....",
+      ".......GGG......",
+      "......GGG.......",
+      ".....rrr........",
+      "....rrrr........",
+      "...rrrr.........",
+      "...rrr..........",
+      "....r..........."
+    ],
     hood: [
       ".......WW.......",
       "......WwwW......",
@@ -1352,146 +1526,739 @@
     if (taps >= 5) { taps = 0; zukMode(); }
   });
 
-  // ---------- Pixel ship: sits on the right edge, follows the cursor up and down,
-  // fires once a second, and knocks one pixel out of whichever card it hits ----------
+  // ---------- Minigames for the Soul ----------
+  // Both games share one rule: hits knock real 8px pixels out of the page.
+  // Destroyed pixels are cut out with a mask, so the true background shows through.
   (() => {
-    const PX = 8, SCALE = 3, FIRE_MS = 1000, SPEED = 16;
-    const SHIP = [
-      "......XX.",
-      "....XXXX.",
-      "..XXXXXX.",
-      "XXXXWWXXo",
-      "..YYYYYY.",
-      "....YYYY.",
-      "......YY."
-    ];
-    const COLORS = { X: "#ffd34d", Y: "#c98a1f", W: "#ffffff", o: "#ff9a1f" };
-    const usable = matchMedia("(hover: hover) and (min-width: 701px)");
-    const layer = document.createElement("canvas");
-    layer.className = "ship-layer"; layer.setAttribute("aria-hidden", "true");
-    document.body.appendChild(layer);
-    const ctx = layer.getContext("2d");
-    const hud = document.getElementById("shipHud"), count = document.getElementById("shipCount");
-    const toggle = document.getElementById("shipToggle");
+    const PX = 8, M = 16, SVG_NS = "http://www.w3.org/2000/svg";
+    const $ = id => document.getElementById(id);
+    const hud = $("mgHud"), hudTitle = $("mgTitle"), countEl = $("mgCount"), toolsEl = $("mgTools");
+    const nav = document.querySelector("nav");
+    const hasMouse = matchMedia("(hover: hover) and (pointer: fine)");
 
-    const damage = new WeakMap(); // card -> destroyed pixels per row, counted in from the right edge
-    const ship = { y: innerHeight / 2, target: innerHeight / 2 };
-    let on = false, raf = 0, fireTimer = 0, destroyed = 0, flash = 0, frameNo = 0;
-    let bullets = [], debris = [];
+    // Shared effects canvas: ship, shots, debris, smoke, fire, bombs, laser, ants, tool cursors
+    const fx = document.createElement("canvas");
+    fx.className = "fx-layer"; fx.setAttribute("aria-hidden", "true");
+    document.body.appendChild(fx);
+    const ctx = fx.getContext("2d");
+    const sizeFx = () => { fx.width = innerWidth; fx.height = innerHeight; };
+    sizeFx(); addEventListener("resize", sizeFx);
+    const drawRows = (rows, colors, x, y, scale, skip) => rows.forEach((row, ry) => [...row].forEach((ch, rx) => {
+      if (!colors[ch] || (skip && skip(ch))) return;
+      ctx.fillStyle = colors[ch]; ctx.fillRect(x + rx * scale, y + ry * scale, scale, scale);
+    }));
 
-    const size = () => { layer.width = innerWidth; layer.height = innerHeight; };
-    size(); addEventListener("resize", size);
-    addEventListener("pointermove", e => { ship.target = e.clientY; }, { passive: true });
-    const shipW = SHIP[0].length * SCALE, shipH = SHIP.length * SCALE;
-    const shipX = () => innerWidth - 14 - shipW;
-
-    function fire() {
-      if (document.hidden) return;
-      // prev starts at the screen edge, so a card that reaches under the ship still gets hit
-      bullets.push({ x: shipX(), prev: innerWidth, y: Math.round(ship.y) });
-      flash = 4;
+    // ---- what can be destroyed: every visible element except backgrounds ----
+    const TARGET_SEL = [
+      "nav .logo", "nav a", "header .tag", "header h1", "header .subtitle", "header .win", "header .btn",
+      "section .win", "section h2", "section .lede", "section .sub-h", "footer .end", "footer p"
+    ].join(",");
+    let targetList = [];
+    function refreshTargets() {
+      const all = [...document.querySelectorAll(TARGET_SEL)];
+      targetList = all.filter(el => !all.some(o => o !== el && o.contains(el))); // skip things inside other targets
     }
-
-    // The first card whose exposed right face the bullet crossed this frame
-    function findHit(b, prevX) {
-      let best = null;
-      for (const card of document.querySelectorAll("section .win")) {
-        const r = card.getBoundingClientRect();
-        if (b.y < r.top || b.y >= r.bottom || r.bottom < 0 || r.top > innerHeight) continue;
-        const rows = damage.get(card) || [];
-        const row = Math.floor((b.y - r.top) / PX), eroded = rows[row] || 0;
-        if (eroded >= Math.ceil(r.width / PX)) continue; // this row is already gone
-        const face = r.right - eroded * PX;
-        if (prevX >= face && b.x <= face && (!best || face > best.face)) best = { card, r, rows, row, eroded, face };
+    refreshTargets();
+    const navBottom = () => nav.getBoundingClientRect().bottom;
+    // the target under a screen point (things scrolled under the sticky top bar don't count)
+    function targetAt(x, y) {
+      const nb = navBottom();
+      for (const el of targetList) {
+        if (y < nb && !nav.contains(el)) continue;
+        const r = el.getBoundingClientRect();
+        if (x >= r.left && x < r.right && y >= r.top && y < r.bottom) return { el, r };
       }
-      return best;
+      return null;
     }
 
-    function destroyPixel({ card, r, rows, row, eroded, face }) {
-      rows[row] = eroded + 1; damage.set(card, rows);
-      const border = parseFloat(getComputedStyle(card).borderTopWidth) || 0;
-      const hole = document.createElement("i");
-      hole.className = "hole";
-      hole.style.right = (eroded * PX - border) + "px";
-      hole.style.top = (row * PX - border) + "px";
-      hole.style.width = PX + "px";
-      hole.style.height = Math.min(PX, r.height - row * PX) + "px";
-      card.appendChild(hole);
+    // ---- damage model: each element is a grid of PX cells ----
+    const dmg = new WeakMap(), dirty = new Set();
+    let destroyed = 0, particles = [], effects = [], smokers = [], ants = [], stains = [];
+    function stateOf(el, r) {
+      let d = dmg.get(el);
+      if (!d) dmg.set(el, d = { cells: new Set(), scorched: new Set(), w: Math.max(1, Math.round(r.width)), h: Math.max(1, Math.round(r.height)) });
+      return d;
+    }
+    const gridOf = d => ({ cols: Math.ceil(d.w / PX), rows: Math.ceil(d.h / PX) });
+    const cellOf = (r, x, y) => ({ row: Math.floor((y - r.top) / PX), col: Math.floor((x - r.left) / PX) });
+    const inGrid = (d, row, col) => { const g = gridOf(d); return row >= 0 && col >= 0 && row < g.rows && col < g.cols; };
+    // the mask: opaque everywhere (with a margin so box shadows survive), cleared where pixels are destroyed
+    function maskOf(el, d) {
+      if (!d.g) {
+        const c = document.createElement("canvas");
+        c.width = d.w + 2 * M; c.height = d.h + 2 * M;
+        d.c = c; d.g = c.getContext("2d");
+        d.g.fillStyle = "#000"; d.g.fillRect(0, 0, c.width, c.height);
+        for (const p of ["mask", "webkitMask"]) {
+          el.style[p + "Size"] = `calc(100% + ${2 * M}px) calc(100% + ${2 * M}px)`;
+          el.style[p + "Position"] = `-${M}px -${M}px`;
+          el.style[p + "Repeat"] = "no-repeat";
+        }
+        el.style.maskClip = "no-clip";
+      }
+      return d.g;
+    }
+    function flushMasks() {
+      for (const el of dirty) {
+        const url = `url(${dmg.get(el).c.toDataURL()})`;
+        el.style.maskImage = url; el.style.webkitMaskImage = url;
+      }
+      dirty.clear();
+    }
+    function colorOf(el) {
+      const cs = getComputedStyle(el), bg = cs.backgroundColor;
+      return bg && bg !== "transparent" && !/rgba\(.*,\s*0\)$/.test(bg) ? bg : cs.color;
+    }
+    // overlays (scorch marks, cracks) need a positioned parent
+    function hostOf(el) {
+      const cs = getComputedStyle(el);
+      if (cs.position === "static") el.style.position = "relative";
+      return parseFloat(cs.borderTopWidth) || 0;
+    }
+
+    function destroyCell(el, row, col, r = el.getBoundingClientRect()) {
+      const d = stateOf(el, r), key = row + "," + col;
+      if (!inGrid(d, row, col) || d.cells.has(key)) return false;
+      d.cells.add(key);
+      maskOf(el, d).clearRect(M + col * PX, M + row * PX, PX, PX);
+      dirty.add(el);
       destroyed++;
-      count.textContent = String(destroyed).padStart(4, "0");
-      // the knocked-out pixel breaks into debris
-      const color = getComputedStyle(card).backgroundColor;
-      for (let i = 0; i < 6; i++) {
-        debris.push({ x: face - PX / 2, y: r.top + row * PX + Math.random() * PX,
-          vx: 1 + Math.random() * 3, vy: -2.5 + Math.random() * 3, life: 18 + Math.random() * 18,
-          color: i < 2 ? "#ffffff" : color });
+      countEl.textContent = String(destroyed).padStart(4, "0");
+      const color = colorOf(el), cx = r.left + col * PX + PX / 2, cy = r.top + row * PX + PX / 2;
+      for (let i = 0; i < 4; i++) {
+        particles.push({ x: cx, y: cy, vx: (Math.random() - 0.5) * 5, vy: -1 - Math.random() * 3, g: 0.18,
+          life: 16 + Math.random() * 16, color: i === 0 ? "#ffffff" : color });
       }
+      wake();
+      return true;
+    }
+    function destroyAt(x, y) {
+      const t = targetAt(x, y);
+      if (!t) return false;
+      const { row, col } = cellOf(t.r, x, y);
+      return destroyCell(t.el, row, col, t.r);
+    }
+    function destroyCircle(x, y, radius, ragged = 0) {
+      let n = 0;
+      const nb = navBottom();
+      for (const el of targetList) {
+        const r = el.getBoundingClientRect();
+        if (x + radius < r.left || x - radius > r.right || y + radius < r.top || y - radius > r.bottom) continue;
+        const c0 = Math.max(0, Math.floor((x - radius - r.left) / PX)), c1 = Math.floor((x + radius - r.left) / PX);
+        const r0 = Math.max(0, Math.floor((y - radius - r.top) / PX)), r1 = Math.floor((y + radius - r.top) / PX);
+        for (let row = r0; row <= r1; row++) for (let col = c0; col <= c1; col++) {
+          const cx = r.left + col * PX + PX / 2, cy = r.top + row * PX + PX / 2;
+          if (cy < nb && !nav.contains(el)) continue;
+          if (Math.hypot(cx - x, cy - y) <= radius - Math.random() * ragged && destroyCell(el, row, col, r)) n++;
+        }
+      }
+      return n;
+    }
+    // flamethrower: the pixel keeps its place but loses its color and smokes for a while
+    function scorchAt(x, y) {
+      const t = targetAt(x, y);
+      if (!t) return false;
+      const { row, col } = cellOf(t.r, x, y), d = stateOf(t.el, t.r), key = row + "," + col;
+      if (!inGrid(d, row, col) || d.cells.has(key) || d.scorched.has(key)) return false;
+      d.scorched.add(key);
+      const border = hostOf(t.el), s = document.createElement("i");
+      s.className = "scorch";
+      s.style.left = (col * PX - border) + "px"; s.style.top = (row * PX - border) + "px";
+      s.style.width = s.style.height = PX + "px";
+      t.el.appendChild(s);
+      smokers.push({ el: t.el, ox: col * PX + PX / 2, oy: row * PX, until: performance.now() + 4500 });
+      if (smokers.length > 500) smokers.splice(0, smokers.length - 500);
+      wake();
+      return true;
+    }
+    function repair() {
+      for (const el of targetList) {
+        const d = dmg.get(el);
+        if (!d) continue;
+        for (const p of ["maskImage", "webkitMaskImage"]) el.style[p] = "";
+        el.querySelectorAll(":scope > .scorch, :scope > .paint, :scope > svg.cracks").forEach(n => n.remove());
+        dmg.delete(el);
+      }
+      dirty.clear(); smokers = []; ants = []; stains = [];
+      destroyed = 0; countEl.textContent = "0000";
+      refreshTargets();
     }
 
-    function frame() {
-      frameNo++;
-      ctx.clearRect(0, 0, layer.width, layer.height);
-      ship.y += (ship.target - ship.y) * 0.2;
-      ship.y = Math.max(shipH, Math.min(innerHeight - shipH, ship.y));
+    // ---- ants: wander the screen on a random walk ----
+    // alive: walks around. burnt (flamethrower): grey and frozen. Any other hit, or a click
+    // on a burnt ant, splats it into a blood stain that stays put on the page.
+    const ANT_A = ["k...k...k", ".k.k...k.", "BBB.HH.hh", ".k.k...k.", "k...k...k"];
+    const ANT_B = ["..k.k...k", ".k.k...k.", "BBB.HH.hh", ".k.k...k.", "..k.k...k"];
+    const ANT_COLORS = { B: "#ff5a3c", H: "#e2462a", h: "#b8321f", k: "#ffb08a" };
+    const ANT_BURNT = { B: "#6d6a73", H: "#5a5760", h: "#4a4750", k: "#8a8794" };
+    const BLOOD = ["#5c0717", "#8a0f24", "#b3122f"];
+    function addAnt(x, y) {
+      ants.push({ x, y, ang: Math.random() * Math.PI * 2, turn: 0, v: 0.7 + Math.random() * 0.5, t: 0, pause: 0, burnt: false });
+      if (ants.length > 40) ants.shift();
+      wake();
+    }
+    const antsNear = (x, y, r) => ants.filter(a => Math.hypot(a.x - x, a.y - y) <= r);
+    function splat(a) {
+      ants = ants.filter(o => o !== a);
+      // an irregular pixel splat, stored in page coordinates so it scrolls with the page
+      const cells = [], R = 2.6 + Math.random() * 1.6;
+      for (let i = -6; i <= 6; i++) for (let j = -5; j <= 5; j++) {
+        const d = Math.hypot(i, j * 1.25);
+        if (d < R - Math.random() * 1.2 || (d < R + 3 && Math.random() < 0.05)) {
+          cells.push([i, j, d < R * 0.45 ? BLOOD[0] : BLOOD[1 + Math.floor(Math.random() * 2)]]);
+        }
+      }
+      stains.push({ px: a.x + scrollX, py: a.y + scrollY, cells });
+      if (stains.length > 120) stains.shift();
+      for (let i = 0; i < 8; i++) particles.push({ x: a.x, y: a.y, vx: (Math.random() - 0.5) * 4, vy: -1 - Math.random() * 2.5, g: 0.2, life: 10 + Math.random() * 10, color: BLOOD[1 + (i % 2)] });
+      wake();
+    }
+    const killAnts = (x, y, r) => antsNear(x, y, r).forEach(splat);
+    function burnAnts(x, y, r) {
+      for (const a of antsNear(x, y, r)) {
+        if (a.burnt) continue;
+        a.burnt = true;
+        for (let i = 0; i < 5; i++) particles.push({ x: a.x, y: a.y, vx: (Math.random() - 0.5) * 0.6, vy: -0.6 - Math.random() * 0.5, g: -0.004, life: 40 + Math.random() * 30, max: 70, size: 3, grow: 0.12, fade: 0.55, color: "#8a8794" });
+      }
+    }
+    // a click on a burnt ant splats it; returns true if one was there
+    function clickBurntAnt(x, y) {
+      const a = antsNear(x, y, 12).find(o => o.burnt);
+      if (a) splat(a);
+      return !!a;
+    }
+    function drawStains() {
+      for (const s of stains) {
+        const sx = Math.round(s.px - scrollX), sy = Math.round(s.py - scrollY);
+        if (sy < -30 || sy > innerHeight + 30) continue;
+        for (const [i, j, c] of s.cells) { ctx.fillStyle = c; ctx.fillRect(sx + i * 3, sy + j * 3, 3, 3); }
+      }
+    }
+    function stepAnt(a) {
+      if (a.burnt) {
+        // frozen in place, legs still
+        ctx.save(); ctx.translate(Math.round(a.x), Math.round(a.y));
+        ctx.rotate(Math.round(a.ang / (Math.PI / 4)) * (Math.PI / 4));
+        drawRows(ANT_A, ANT_BURNT, -9, -5, 2);
+        ctx.restore();
+        return;
+      }
+      if (a.pause > 0) a.pause--;
+      else {
+        a.t++;
+        a.turn = (a.turn + (Math.random() - 0.5) * 0.12) * 0.94;
+        a.ang += a.turn;
+        a.x += Math.cos(a.ang) * a.v; a.y += Math.sin(a.ang) * a.v;
+        if (a.x < 10 || a.x > innerWidth - 10) { a.ang = Math.PI - a.ang; a.x = Math.max(10, Math.min(innerWidth - 10, a.x)); }
+        if (a.y < 10 || a.y > innerHeight - 10) { a.ang = -a.ang; a.y = Math.max(10, Math.min(innerHeight - 10, a.y)); }
+        if (Math.random() < 0.004) a.pause = 30 + Math.random() * 60; // stops to look around
+      }
+      ctx.save();
+      ctx.translate(Math.round(a.x), Math.round(a.y));
+      ctx.rotate(Math.round(a.ang / (Math.PI / 4)) * (Math.PI / 4)); // 8 directions keeps it pixel-crisp
+      drawRows(Math.floor(a.t / 6) % 2 ? ANT_A : ANT_B, ANT_COLORS, -9, -5, 2);
+      ctx.restore();
+    }
 
-      bullets = bullets.filter(b => {
-        const prevX = b.prev; b.x -= SPEED; b.prev = b.x;
-        const h = findHit(b, prevX);
-        if (h) { destroyPixel(h); return false; }
-        return b.x > -20;
+    // ---- one render loop for everything; it sleeps when nothing is moving ----
+    let raf = 0, active = null;
+    const games = {};
+    function wake() { if (!raf) raf = requestAnimationFrame(loop); }
+    function loop() {
+      raf = 0;
+      ctx.clearRect(0, 0, fx.width, fx.height);
+      if (active) games[active].frame();
+      effects = effects.filter(draw => draw());
+      // smoke drifting up from scorched pixels
+      const now = performance.now();
+      smokers = smokers.filter(s => s.until > now && s.el.isConnected);
+      for (const s of smokers) {
+        if (Math.random() < 0.06) {
+          const r = s.el.getBoundingClientRect();
+          particles.push({ x: r.left + s.ox, y: r.top + s.oy, vx: (Math.random() - 0.5) * 0.6, vy: -0.5 - Math.random() * 0.6,
+            g: -0.004, life: 50 + Math.random() * 30, max: 80, size: 3, grow: 0.12, fade: 0.55, color: "#8a8794" });
+        }
+      }
+      drawStains();
+      for (const a of ants) stepAnt(a);
+      particles = particles.filter(p => p.life > 0);
+      if (particles.length > 2000) particles.splice(0, particles.length - 2000);
+      for (const p of particles) {
+        p.life--; p.vy += p.g; p.x += p.vx; p.y += p.vy;
+        if (p.grow) p.size += p.grow;
+        const s = Math.round(p.size || 3);
+        ctx.globalAlpha = p.fade ? Math.max(0, p.life / p.max) * p.fade : 1;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(Math.round(p.x - s / 2), Math.round(p.y - s / 2), s, s);
+      }
+      ctx.globalAlpha = 1;
+      flushMasks();
+      if (active || particles.length || effects.length || smokers.length || ants.length || stains.length) raf = requestAnimationFrame(loop);
+    }
+
+    // ================= DIV INVADER =================
+    // A ship on the right edge follows the cursor up and down and fires four times a second.
+    // Each shot knocks out the first exposed pixel it reaches, on anything but the background.
+    games.invader = (() => {
+      const SCALE = 3, FIRE_MS = 250, SPEED = 16;
+      const SHIP = ["......XX.", "....XXXX.", "..XXXXXX.", "XXXXWWXXo", "..YYYYYY.", "....YYYY.", "......YY."];
+      const COLORS = { X: "#ffd34d", Y: "#c98a1f", W: "#ffffff", o: "#ff9a1f" };
+      const shipW = SHIP[0].length * SCALE, shipH = SHIP.length * SCALE;
+      const ship = { y: innerHeight / 2, target: innerHeight / 2 };
+      let bullets = [], fireTimer = 0, flash = 0, frameNo = 0;
+      const shipX = () => innerWidth - 14 - shipW;
+      const follow = e => { ship.target = e.clientY; };
+
+      // the right edge of the rightmost intact pixel in a row, or null if the row is gone
+      function faceOf(el, row, r) {
+        const d = dmg.get(el), cols = Math.ceil((d ? d.w : r.width) / PX);
+        for (let col = cols - 1; col >= 0; col--) if (!d || !d.cells.has(row + "," + col)) return { col, face: r.left + (col + 1) * PX };
+        return null;
+      }
+      function findHit(b, prevX) {
+        let best = null;
+        const nb = navBottom();
+        for (const el of targetList) {
+          if (b.y < nb && !nav.contains(el)) continue;
+          const r = el.getBoundingClientRect();
+          if (b.y < r.top || b.y >= r.bottom || r.width === 0) continue;
+          const row = Math.floor((b.y - r.top) / PX), f = faceOf(el, row, r);
+          if (f && prevX >= f.face && b.x <= f.face && (!best || f.face > best.face)) best = { el, r, row, ...f };
+        }
+        return best;
+      }
+      function fire() {
+        if (document.hidden) return;
+        // prev starts at the screen edge, so anything reaching under the ship still gets hit
+        bullets.push({ x: shipX(), prev: innerWidth, y: Math.round(ship.y) });
+        flash = 3;
+      }
+      return {
+        name: "DIV INVADER",
+        canStart: () => hasMouse.matches || "Div Invader needs a mouse",
+        start() { addEventListener("pointermove", follow, { passive: true }); fireTimer = setInterval(fire, FIRE_MS); },
+        stop() { removeEventListener("pointermove", follow); clearInterval(fireTimer); bullets = []; },
+        frame() {
+          frameNo++;
+          ship.y += (ship.target - ship.y) * 0.25;
+          ship.y = Math.max(shipH, Math.min(innerHeight - shipH, ship.y));
+          bullets = bullets.filter(b => {
+            const prevX = b.prev; b.x -= SPEED; b.prev = b.x;
+            // ants in the line of fire get hit first
+            const ant = ants.find(a => Math.abs(a.y - b.y) < 6 && a.x <= prevX && a.x >= b.x);
+            if (ant) { splat(ant); return false; }
+            const h = findHit(b, prevX);
+            if (h) { destroyCell(h.el, h.row, h.col, h.r); return false; }
+            return b.x > -20;
+          });
+          for (const b of bullets) {
+            ctx.fillStyle = "#ffd34d"; ctx.fillRect(b.x, b.y - 1, 12, 3);
+            ctx.fillStyle = "#ffffff"; ctx.fillRect(b.x, b.y - 1, 3, 3);
+          }
+          const sx = shipX(), sy = Math.round(ship.y - shipH / 2);
+          drawRows(SHIP, COLORS, sx, sy, SCALE, ch => ch === "o" && frameNo % 6 < 3); // engine flicker
+          if (flash > 0) { flash--; ctx.fillStyle = "#ffffff"; ctx.fillRect(sx - 6, Math.round(ship.y) - 3, 6, 6); }
+        }
+      };
+    })();
+
+    // ================= PAGE WRECKER =================
+    games.wrecker = (() => {
+      const layer = document.createElement("div");
+      layer.className = "wreck-layer"; layer.setAttribute("aria-hidden", "true");
+      const TOOLS = [
+        { id: "hammer", label: "HAMMER" }, { id: "blaster", label: "BLAST" }, { id: "flame", label: "FLAME" },
+        { id: "laser", label: "LASER" }, { id: "bomb", label: "BOMB" }, { id: "ant", label: "ANT" }
+      ];
+      let tool = "hammer", down = false, last = null, holdTimer = 0;
+      const pointer = { x: -100, y: -100, inside: false };
+      let anim = 99, recoil = 0, frameNo = 0; // anim = frames since the last click
+
+      function shake() {
+        if (reduceMotion) return;
+        document.body.classList.remove("shake"); void document.body.offsetWidth; document.body.classList.add("shake");
+      }
+      function ring(x, y, color, maxR, frames) {
+        let f = 0;
+        effects.push(() => {
+          f++;
+          const rad = Math.round((f / frames) * maxR / 3) * 3;
+          ctx.fillStyle = color;
+          for (let a = 0; a < Math.PI * 2; a += 0.35) ctx.fillRect(Math.round(x + Math.cos(a) * rad), Math.round(y + Math.sin(a) * rad), 3, 3);
+          return f < frames;
+        });
+        wake();
+      }
+      function sparks(x, y, n, color) {
+        for (let i = 0; i < n; i++) particles.push({ x, y, vx: (Math.random() - 0.5) * 7, vy: (Math.random() - 0.7) * 6, g: 0.18, life: 8 + Math.random() * 10, color });
+        wake();
+      }
+
+      // --- hammer: a small dent with jagged cracks branching out in random directions ---
+      function crackAt(x, y) {
+        ring(x, y, "#ffffff", 20, 6);
+        sparks(x, y, 10, "#d9dbe8");
+        killAnts(x, y, 18);
+        const t = targetAt(x, y);
+        if (!t) return;
+        destroyCircle(x, y, PX * 1.1, PX * 0.5);
+        const border = hostOf(t.el), r = t.r;
+        let svg = t.el.querySelector(":scope > svg.cracks");
+        if (!svg) {
+          svg = document.createElementNS(SVG_NS, "svg");
+          svg.setAttribute("class", "cracks");
+          svg.setAttribute("width", Math.round(r.width)); svg.setAttribute("height", Math.round(r.height));
+          svg.style.left = -border + "px"; svg.style.top = -border + "px";
+          t.el.appendChild(svg);
+        }
+        const lx = x - r.left, ly = y - r.top, paths = [];
+        const grow = (sx, sy, ang, len, depth) => {
+          const pts = [[sx, sy]];
+          let px = sx, py = sy, a = ang, gone = 0;
+          while (gone < len) {
+            const step = 4 + Math.random() * 7;
+            a += (Math.random() - 0.5) * 0.9;
+            px += Math.cos(a) * step; py += Math.sin(a) * step; gone += step;
+            pts.push([px, py]);
+            if (depth < 2 && Math.random() < 0.16) grow(px, py, a + (Math.random() < 0.5 ? -1 : 1) * (0.5 + Math.random() * 0.6), (len - gone) * 0.6, depth + 1);
+          }
+          paths.push({ pts, depth });
+        };
+        const n = 5 + Math.floor(Math.random() * 4);
+        for (let i = 0; i < n; i++) grow(lx, ly, (i / n) * Math.PI * 2 + (Math.random() - 0.5) * 0.7, 25 + Math.random() * 85, 0);
+        for (const { pts, depth } of paths) {
+          const hl = document.createElementNS(SVG_NS, "polyline");
+          hl.setAttribute("class", "crack-hl");
+          hl.setAttribute("points", pts.map(p => (p[0] + 1).toFixed(1) + "," + (p[1] + 1).toFixed(1)).join(" "));
+          const line = document.createElementNS(SVG_NS, "polyline");
+          line.setAttribute("class", "crack");
+          line.setAttribute("points", pts.map(p => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" "));
+          line.style.strokeWidth = depth === 0 ? 2.5 : 1.5;
+          svg.appendChild(hl); svg.appendChild(line);
+        }
+      }
+
+      // --- bomb: blinks, then blows a crater ---
+      const BOMB_COLORS = { X: "#2a2a3a", W: "#ffffff", E: "#8a5426", y: "#ffe680", Y: "#f5b62a" };
+      function dropBomb(x, y) {
+        let f = 0;
+        const FUSE = 70;
+        effects.push(() => {
+          f++;
+          if (f < FUSE) {
+            const blink = Math.floor(f / (f > FUSE * 0.6 ? 3 : 8)) % 2; // faster as the fuse burns down
+            drawRows(SPRITES.bomb, BOMB_COLORS, x - 18, y - 18, 3, ch => (ch === "y" || ch === "Y") && blink);
+            if (blink) { ctx.fillStyle = "#ff4a5e"; ctx.fillRect(x - 3, y + 6, 6, 6); }
+            return true;
+          }
+          destroyCircle(x, y, PX * 4.5, PX * 1.2);
+          killAnts(x, y, PX * 4.5 + 6);
+          ring(x, y, "#ffd34d", 70, 14); ring(x, y, "#ff4a5e", 45, 10);
+          sparks(x, y, 30, "#ff9a1f");
+          shake();
+          return false;
+        });
+        wake();
+      }
+      // --- laser: drag to cut a line ---
+      function laserTo(x, y) {
+        const from = last || { x, y };
+        const dist = Math.hypot(x - from.x, y - from.y), steps = Math.max(1, Math.ceil(dist / 4));
+        for (let i = 1; i <= steps; i++) {
+          const px = from.x + (x - from.x) * i / steps, py = from.y + (y - from.y) * i / steps;
+          destroyAt(px, py); killAnts(px, py, 8);
+        }
+        let f = 0;
+        const a = { ...from }, b = { x, y };
+        effects.push(() => {
+          f++;
+          ctx.strokeStyle = f < 3 ? "#ffffff" : "#ff7ad9"; ctx.lineWidth = f < 3 ? 4 : 2;
+          ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+          return f < 8;
+        });
+        last = { x, y };
+        wake();
+      }
+      // --- flamethrower: sprays fire to the left of the nozzle; touched pixels go grey and smoke ---
+      const FIRE = ["#fff6a0", "#ffd34d", "#ff9a1f", "#ff4a5e"];
+      function burn() {
+        for (let i = 0; i < 3; i++) {
+          const a = Math.PI + (Math.random() - 0.5) * 0.9, d = 10 + Math.random() * 64;
+          const fx2 = pointer.x + Math.cos(a) * d, fy2 = pointer.y + Math.sin(a) * d;
+          scorchAt(fx2, fy2); burnAnts(fx2, fy2, 14);
+        }
+        burnAnts(pointer.x - 30, pointer.y, 28); // the flame cone itself
+        for (let i = 0; i < 7; i++) {
+          const a = Math.PI + (Math.random() - 0.5) * 0.7, s = 3 + Math.random() * 4;
+          particles.push({ x: pointer.x - 4, y: pointer.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 0.3, g: -0.06,
+            life: 12 + Math.random() * 12, max: 24, size: 3, grow: 0.35, fade: 1, color: FIRE[Math.floor(Math.random() * FIRE.length)] });
+        }
+        wake();
+      }
+      function blast() {
+        const jx = pointer.x + (Math.random() - 0.5) * PX * 2, jy = pointer.y + (Math.random() - 0.5) * PX * 2;
+        destroyAt(jx, jy); killAnts(jx, jy, 10); sparks(jx, jy, 3, "#ffd34d");
+        recoil = 3;
+      }
+
+      function onDown(e) {
+        e.preventDefault();
+        try { layer.setPointerCapture(e.pointerId); } catch (err) { /* not capturable, fine */ }
+        down = true; last = null; anim = 0;
+        Object.assign(pointer, { x: e.clientX, y: e.clientY, inside: true });
+        const { x, y } = pointer;
+        // clicking a burnt, frozen ant with any tool splats it
+        if (clickBurntAnt(x, y)) { down = false; return; }
+        if (tool === "hammer") crackAt(x, y);
+        else if (tool === "bomb") dropBomb(x, y);
+        else if (tool === "laser") laserTo(x, y);
+        else if (tool === "ant") addAnt(x, y);
+        else if (tool === "blaster") { blast(); holdTimer = setInterval(blast, 60); }
+        else if (tool === "flame") { burn(); holdTimer = setInterval(burn, 45); }
+      }
+      function onMove(e) {
+        Object.assign(pointer, { x: e.clientX, y: e.clientY, inside: true });
+        if (down && tool === "laser") laserTo(pointer.x, pointer.y);
+      }
+      function onUp() { down = false; last = null; clearInterval(holdTimer); }
+      function onLeave() { pointer.inside = false; }
+
+      // --- the cursor is the tool itself, with a small animation on click ---
+      const ease = (a, b, t) => a + (b - a) * Math.min(1, Math.max(0, t));
+      function drawCursor() {
+        if (!pointer.inside) return;
+        frameNo++; anim++;
+        const { x, y } = pointer;
+        ctx.save();
+        if (tool === "hammer") {
+          // resting tilted back; on click it swings down onto the point, then lifts again
+          const ang = anim < 3 ? ease(-0.55, 0.25, anim / 3) : ease(0.25, -0.55, (anim - 3) / 7);
+          ctx.translate(x, y + 36); ctx.rotate(ang);
+          drawRows(SPRITES.hammer, PAL, -24, -40, 3);
+        } else if (tool === "blaster") {
+          const kick = recoil > 0 ? recoil-- * 2 : 0;
+          drawRows(SPRITES.blaster, PAL, x - 45 + kick, y - 7, 3);
+          if (down && frameNo % 4 < 2) { ctx.fillStyle = "#ffffff"; ctx.fillRect(x - 3, y - 3, 6, 6); }
+        } else if (tool === "flame") {
+          drawRows(SPRITES.flame, PAL, x, y - 10, 3);
+          // pilot flame flickers at the nozzle, bigger while firing
+          const s = down ? 9 : 3 + (frameNo % 8 < 4 ? 3 : 0);
+          ctx.fillStyle = down ? "#ffd34d" : "#ff9a1f"; ctx.fillRect(x - s, y - s / 2, s, s);
+        } else if (tool === "laser") {
+          drawRows(SPRITES.laser, PAL, x - 48, y - 6, 3);
+          if (down) {
+            const g = 4 + (frameNo % 6);
+            ctx.fillStyle = "rgba(255, 122, 217, .5)"; ctx.fillRect(x - g, y - g, g * 2, g * 2);
+          }
+        } else if (tool === "bomb") {
+          // squashes when you drop one
+          const sq = anim < 6 ? 1 - Math.sin((anim / 6) * Math.PI) * 0.25 : 1;
+          ctx.translate(x, y + 16); ctx.scale(2 - sq, sq);
+          drawRows(SPRITES.bomb, BOMB_COLORS, -18, -33, 3);
+        } else if (tool === "ant") {
+          // hops when you place one, wiggles its legs otherwise
+          const hop = anim < 8 ? -Math.sin((anim / 8) * Math.PI) * 10 : 0;
+          drawRows(Math.floor(frameNo / 8) % 2 ? ANT_A : ANT_B, ANT_COLORS, x - 13, y - 8 + hop, 3);
+        }
+        ctx.restore();
+        // a tiny dot marks the exact spot
+        ctx.fillStyle = "#ffffff"; ctx.fillRect(Math.round(x) - 1, Math.round(y) - 1, 2, 2);
+      }
+
+      function renderTools() {
+        toolsEl.innerHTML = "";
+        for (const t of TOOLS) {
+          const b = document.createElement("button");
+          b.type = "button"; b.className = t.id === tool ? "on" : "";
+          b.setAttribute("aria-pressed", t.id === tool);
+          b.appendChild(sprite(t.id));
+          b.appendChild(document.createTextNode(t.label));
+          b.addEventListener("click", () => { tool = t.id; anim = 99; renderTools(); });
+          toolsEl.appendChild(b);
+        }
+      }
+      return {
+        name: "PAGE WRECKER",
+        canStart: () => true,
+        start() {
+          document.body.appendChild(layer);
+          layer.addEventListener("pointerdown", onDown);
+          layer.addEventListener("pointermove", onMove);
+          layer.addEventListener("pointerup", onUp);
+          layer.addEventListener("pointercancel", onUp);
+          layer.addEventListener("pointerleave", onLeave);
+          renderTools();
+        },
+        stop() { onUp(); onLeave(); layer.remove(); toolsEl.innerHTML = ""; },
+        frame: drawCursor
+      };
+    })();
+
+    // ================= PAGE WORM =================
+    // A pixel worm chases the cursor and eats every pixel it crawls over, growing as it goes.
+    games.worm = (() => {
+      const pointer = { x: innerWidth / 2, y: innerHeight / 2 };
+      const follow = e => { pointer.x = e.clientX; pointer.y = e.clientY; };
+      let pts = [], len = 40, ang = 0, t = 0;
+      const SPEED = 2.6, TURN = 0.11, MAX_LEN = 600;
+      return {
+        name: "PAGE WORM",
+        canStart: () => hasMouse.matches || "Page Worm needs a mouse",
+        start() {
+          addEventListener("pointermove", follow, { passive: true });
+          // it crawls in from the bottom-left corner
+          pts = [{ x: 20, y: innerHeight - 20 }]; len = 40; ang = -Math.PI / 4; t = 0;
+        },
+        stop() { removeEventListener("pointermove", follow); pts = []; },
+        frame() {
+          t++;
+          const head = pts[0];
+          // steer toward the cursor with a limited turn rate, plus a little wiggle
+          let want = Math.atan2(pointer.y - head.y, pointer.x - head.x) - ang;
+          want = Math.atan2(Math.sin(want), Math.cos(want));
+          ang += Math.max(-TURN, Math.min(TURN, want)) + Math.sin(t * 0.25) * 0.05;
+          const close = Math.hypot(pointer.x - head.x, pointer.y - head.y) < 6;
+          const next = close ? { ...head } : { x: head.x + Math.cos(ang) * SPEED, y: head.y + Math.sin(ang) * SPEED };
+          pts.unshift(next);
+          if (pts.length > len) pts.length = len;
+          // eat whatever is under the head
+          if (destroyAt(next.x, next.y)) len = Math.min(MAX_LEN, len + 3);
+          for (const a of antsNear(next.x, next.y, 10)) {
+            ants = ants.filter(o => o !== a);
+            len = Math.min(MAX_LEN, len + 15);
+            for (let i = 0; i < 6; i++) particles.push({ x: a.x, y: a.y, vx: (Math.random() - 0.5) * 3, vy: -1 - Math.random() * 2, g: 0.15, life: 10 + Math.random() * 10, color: "#ff5a3c" });
+          }
+          // body: segments every 3 points, tapering to the tail, with a darker stripe pattern
+          for (let i = pts.length - 1; i >= 3; i -= 3) {
+            const p = pts[i], k = 1 - i / pts.length, s = Math.max(4, Math.round((4 + k * 6) / 2) * 2);
+            ctx.fillStyle = (i / 3) % 4 < 1 ? "#1fa86a" : "#2fe08a";
+            ctx.fillRect(Math.round(p.x - s / 2), Math.round(p.y - s / 2), s, s);
+          }
+          // head with eyes looking where it's going
+          const hx = Math.round(next.x), hy = Math.round(next.y);
+          ctx.fillStyle = "#2fe08a"; ctx.fillRect(hx - 6, hy - 6, 12, 12);
+          ctx.fillStyle = "#1fa86a"; ctx.fillRect(hx - 6, hy + 3, 12, 3);
+          const ex = Math.round(Math.cos(ang) * 2), ey = Math.round(Math.sin(ang) * 2);
+          ctx.fillStyle = "#ffffff"; ctx.fillRect(hx - 5, hy - 4, 4, 4); ctx.fillRect(hx + 1, hy - 4, 4, 4);
+          ctx.fillStyle = "#14101f"; ctx.fillRect(hx - 4 + ex, hy - 3 + ey, 2, 2); ctx.fillRect(hx + 2 + ex, hy - 3 + ey, 2, 2);
+          if (t % 20 < 10) { ctx.fillStyle = "#ff4a5e"; ctx.fillRect(hx + Math.round(Math.cos(ang) * 8) - 1, hy + Math.round(Math.sin(ang) * 8) - 1, 3, 3); } // tongue
+        }
+      };
+    })();
+
+    // ================= PIXEL PAINTER =================
+    // Pick a color and paint over anything on the page, one pixel at a time.
+    games.painter = (() => {
+      const layer = document.createElement("div");
+      layer.className = "wreck-layer"; layer.setAttribute("aria-hidden", "true");
+      const COLORS = ["#ff4a5e", "#ff9a1f", "#ffd34d", "#2fe08a", "#4fb8ff", "#a77bff", "#ff7ad9", "#ffffff", "#14101f"];
+      let color = COLORS[2], erase = false, down = false, last = null, dab = 99, frameNo = 0;
+      const pointer = { x: -100, y: -100, inside: false };
+
+      function paintAt(x, y) {
+        const t = targetAt(x, y);
+        if (!t) return;
+        const { row, col } = cellOf(t.r, x, y), d = stateOf(t.el, t.r), key = row + "," + col;
+        if (!inGrid(d, row, col) || d.cells.has(key)) return;
+        d.paint = d.paint || new Map();
+        let cell = d.paint.get(key);
+        if (erase) { if (cell) { cell.remove(); d.paint.delete(key); } return; }
+        if (!cell) {
+          const border = hostOf(t.el);
+          cell = document.createElement("i");
+          cell.className = "paint";
+          cell.style.left = (col * PX - border) + "px"; cell.style.top = (row * PX - border) + "px";
+          cell.style.width = cell.style.height = PX + "px";
+          t.el.appendChild(cell);
+          d.paint.set(key, cell);
+        }
+        cell.style.background = color;
+      }
+      function strokeTo(x, y) {
+        const from = last || { x, y };
+        const steps = Math.max(1, Math.ceil(Math.hypot(x - from.x, y - from.y) / 4));
+        for (let i = 1; i <= steps; i++) paintAt(from.x + (x - from.x) * i / steps, from.y + (y - from.y) * i / steps);
+        last = { x, y };
+      }
+      function onDown(e) {
+        e.preventDefault();
+        try { layer.setPointerCapture(e.pointerId); } catch (err) { /* fine */ }
+        Object.assign(pointer, { x: e.clientX, y: e.clientY, inside: true });
+        if (clickBurntAnt(pointer.x, pointer.y)) return;
+        down = true; last = null; dab = 0;
+        strokeTo(pointer.x, pointer.y);
+      }
+      function onMove(e) {
+        Object.assign(pointer, { x: e.clientX, y: e.clientY, inside: true });
+        if (down) strokeTo(pointer.x, pointer.y);
+      }
+      function onUp() { down = false; last = null; }
+      function renderTools() {
+        toolsEl.innerHTML = "";
+        for (const c of [...COLORS, "erase"]) {
+          const b = document.createElement("button");
+          const on = c === "erase" ? erase : (!erase && c === color);
+          b.type = "button"; b.className = on ? "on" : "";
+          b.setAttribute("aria-pressed", on);
+          b.setAttribute("aria-label", c === "erase" ? "Eraser" : "Color " + c);
+          if (c === "erase") b.textContent = "ERASE";
+          else { const sw = document.createElement("span"); sw.style.cssText = `display:block;width:22px;height:22px;background:${c};box-shadow:0 0 0 2px var(--shadow)`; b.appendChild(sw); }
+          b.addEventListener("click", () => { if (c === "erase") erase = true; else { erase = false; color = c; } renderTools(); });
+          toolsEl.appendChild(b);
+        }
+      }
+      return {
+        name: "PIXEL PAINTER",
+        canStart: () => true,
+        start() {
+          document.body.appendChild(layer);
+          layer.addEventListener("pointerdown", onDown);
+          layer.addEventListener("pointermove", onMove);
+          layer.addEventListener("pointerup", onUp);
+          layer.addEventListener("pointercancel", onUp);
+          layer.addEventListener("pointerleave", () => { pointer.inside = false; });
+          renderTools();
+        },
+        stop() { onUp(); pointer.inside = false; layer.remove(); toolsEl.innerHTML = ""; },
+        frame() {
+          // the cursor is a brush dipped in the current color; it presses down when you paint
+          if (!pointer.inside) return;
+          frameNo++; dab++;
+          const press = down ? 3 : (dab < 6 ? 3 : 0);
+          drawRows(SPRITES.brush, { ...PAL, r: erase ? "#ffffff" : color }, pointer.x - 12, pointer.y - 33 + press, 3);
+          ctx.fillStyle = "#ffffff"; ctx.fillRect(Math.round(pointer.x) - 1, Math.round(pointer.y) - 1, 2, 2);
+        }
+      };
+    })();
+
+    // ---- switching games on and off ----
+    const cards = document.querySelectorAll(".mini");
+    function setActive(name) {
+      if (active) games[active].stop();
+      if (name && name !== active) {
+        const ok = games[name].canStart();
+        if (ok !== true) { toast(ok, "MINIGAME"); name = null; }
+      } else name = null;
+      active = name;
+      cards.forEach(c => {
+        const on = c.dataset.game === active;
+        c.classList.toggle("playing", on);
+        c.setAttribute("aria-pressed", on);
+        c.querySelector(".badge").textContent = on ? "■ STOP" : "▶ PLAY";
       });
-      for (const b of bullets) {
-        ctx.fillStyle = "#ffd34d"; ctx.fillRect(b.x, b.y - 1, 12, 3);
-        ctx.fillStyle = "#ffffff"; ctx.fillRect(b.x, b.y - 1, 3, 3);
+      hud.hidden = !active;
+      if (active) {
+        refreshTargets();
+        hudTitle.textContent = games[active].name;
+        games[active].start();
+        wake();
       }
-
-      debris = debris.filter(p => p.life > 0);
-      for (const p of debris) {
-        p.life--; p.vy += 0.18; p.x += p.vx; p.y += p.vy;
-        ctx.fillStyle = p.color; ctx.fillRect(Math.round(p.x), Math.round(p.y), 3, 3);
-      }
-
-      // ship, with a flickering engine and a muzzle flash when it fires
-      const sx = shipX(), sy = Math.round(ship.y - shipH / 2);
-      SHIP.forEach((row, y) => [...row].forEach((ch, x) => {
-        if (!COLORS[ch] || (ch === "o" && frameNo % 6 < 3)) return;
-        ctx.fillStyle = COLORS[ch]; ctx.fillRect(sx + x * SCALE, sy + y * SCALE, SCALE, SCALE);
-      }));
-      if (flash > 0) { flash--; ctx.fillStyle = "#ffffff"; ctx.fillRect(sx - 6, Math.round(ship.y) - 3, 6, 6); }
-
-      raf = requestAnimationFrame(frame);
     }
-
-    function start() {
-      if (on || !usable.matches) return;
-      on = true;
-      layer.style.display = "";
-      hud.classList.remove("off");
-      toggle.textContent = "✕"; toggle.setAttribute("aria-label", "Turn the ship off");
-      fireTimer = setInterval(fire, FIRE_MS);
-      raf = requestAnimationFrame(frame);
-    }
-    function stop() {
-      on = false;
-      clearInterval(fireTimer); cancelAnimationFrame(raf);
-      bullets = []; debris = [];
-      ctx.clearRect(0, 0, layer.width, layer.height);
-      layer.style.display = "none";
-      hud.classList.add("off");
-      toggle.textContent = "▶ SHIP"; toggle.setAttribute("aria-label", "Turn the ship on");
-    }
-    // wantOn = what the visitor chose; the ship also needs a mouse and a wide enough window
-    let pref = null;
-    try { pref = localStorage.getItem("zukShip"); } catch (e) { /* storage unavailable */ }
-    let wantOn = pref === "on" || (pref !== "off" && !reduceMotion);
-    toggle.addEventListener("click", () => {
-      wantOn = !on;
-      wantOn ? start() : stop();
-      try { localStorage.setItem("zukShip", wantOn ? "on" : "off"); } catch (e) { /* storage unavailable */ }
-    });
-    usable.addEventListener("change", () => { usable.matches && wantOn ? start() : stop(); });
-    stop();
-    if (wantOn) start();
+    cards.forEach(c => c.addEventListener("click", () => setActive(c.dataset.game)));
+    $("mgExit").addEventListener("click", () => setActive(null));
+    $("mgRepair").addEventListener("click", repair);
+    document.addEventListener("keydown", e => { if (e.key === "Escape" && active) setActive(null); });
+    hasMouse.addEventListener("change", () => { if (active === "invader" && !hasMouse.matches) setActive(null); });
   })();
 </script>
 </body>
