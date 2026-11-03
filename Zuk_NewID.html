@@ -314,11 +314,20 @@
     content: ""; position: fixed; inset: 0; z-index: 64; pointer-events: none;
     background: repeating-linear-gradient(0deg, rgba(0,0,0,.14) 0 1px, transparent 1px 3px);
   }
-  body.glitching > nav, body.glitching > header, body.glitching > section, body.glitching > footer { animation: glitchJitter .18s steps(3); }
-  @keyframes glitchJitter { 0% { transform: translateX(-3px); } 33% { transform: translate(3px, 1px); } 66% { transform: translateX(-1px); } }
-  body.glitching h2, body.glitching .stat-row, body.glitching .bio { text-shadow: -2px 0 0 #ff2bd6, 2px 0 0 #2bffe6; }
+  body.glitching > nav, body.glitching > header, body.glitching > section, body.glitching > footer { animation: glitchJitter .28s steps(4); }
+  @keyframes glitchJitter {
+    0% { transform: translateX(-8px); } 25% { transform: translate(9px, 2px) skewX(-2deg); }
+    50% { transform: translate(-5px, -1px); } 75% { transform: translateX(4px) skewX(1deg); }
+  }
+  /* strong red/cyan split on text while glitching */
+  body.glitching h1.name { text-shadow: -6px 0 0 #ff2bd6, 6px 0 0 #2bffe6, 12px 12px 0 var(--rust) !important; }
+  body.glitching h2, body.glitching h3, body.glitching p, body.glitching .stat-row, body.glitching .id-meta,
+  body.glitching .badge, body.glitching nav a { text-shadow: -4px 0 0 #ff2bd6, 4px 0 0 #2bffe6; }
+  /* one random section "tears" with a color shift during a big glitch */
+  .glitch-tear { filter: hue-rotate(90deg) saturate(1.6) contrast(1.2); }
   .glitch-bars { position: fixed; inset: 0; z-index: 66; pointer-events: none; }
-  .glitch-bars i { position: absolute; left: 0; right: 0; opacity: .35; }
+  .glitch-bars i { position: absolute; left: 0; right: 0; opacity: .55; }
+  .glitch-bars i.block { left: auto; right: auto; opacity: .7; }
   /* Fireworks layer */
   .fireworks { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 65; pointer-events: none; image-rendering: pixelated; }
   /* Dismiss button, pinned to the bottom of the screen while Zuk Mode is on */
@@ -1124,16 +1133,30 @@
   platIo.observe(document.querySelector(".plat-card"));
 
   // Short chiptune fanfare (square wave), played when the cheat fires
+  // Original 8-bit "power-up" sound: a fast rising ladder up a pentatonic scale
+  // (two steps up, one back), a quieter voice a fifth above, then a shimmering top note
   function fanfare() {
     try {
       const ac = new (window.AudioContext || window.webkitAudioContext)();
-      const notes = [523, 659, 784, 1047, 784, 1047, 1319, 1568];
-      notes.forEach((f, i) => {
-        const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + i * 0.08;
-        o.type = "square"; o.frequency.value = f;
-        g.gain.setValueAtTime(0.06, t); g.gain.setValueAtTime(0, t + (i === notes.length - 1 ? 0.35 : 0.07));
-        o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + 0.4);
-      });
+      const scale = [220, 262, 294, 330, 392, 440, 523, 587, 659, 784, 880, 1047, 1175, 1319, 1568, 1760];
+      const ladder = [];
+      for (let i = 0; i < scale.length - 1; i += 1) { ladder.push(scale[i], scale[i + 1]); if (i % 2) ladder.push(scale[i]); }
+      const step = 0.028, t0 = ac.currentTime + 0.02;
+      const voice = (type, vol, mult) => {
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.type = type;
+        ladder.forEach((f, i) => o.frequency.setValueAtTime(f * mult, t0 + i * step));
+        const end = t0 + ladder.length * step;
+        // shimmer: wobble the final note quickly between two pitches
+        for (let k = 0; k < 10; k++) o.frequency.setValueAtTime(1760 * mult * (k % 2 ? 1.06 : 1), end + k * 0.035);
+        g.gain.setValueAtTime(vol, t0);
+        g.gain.setValueAtTime(vol * 0.7, end);
+        g.gain.linearRampToValueAtTime(0, end + 0.38);
+        o.connect(g); g.connect(ac.destination);
+        o.start(t0); o.stop(end + 0.4);
+      };
+      voice("square", 0.05, 1);
+      voice("triangle", 0.035, 1.5);
     } catch (e) { /* no audio available */ }
   }
 
@@ -1207,22 +1230,43 @@
   // Short, slight glitches every couple of seconds
   let glitchTimer = null;
   function glitchOnce() {
+    const big = Math.random() < 0.4;
     const bars = document.createElement("div"); bars.className = "glitch-bars"; bars.setAttribute("aria-hidden", "true");
-    const tints = ["#ff2bd6", "#2bffe6", "#ffffff", "#ffd34d"];
-    for (let i = 0, n = 2 + Math.floor(Math.random() * 3); i < n; i++) {
+    const tints = ["#ff2bd6", "#2bffe6", "#ffffff", "#ffd34d", "#000000"];
+    const pick = () => tints[Math.floor(Math.random() * tints.length)];
+    // full-width noise lines
+    for (let i = 0, n = (big ? 7 : 4) + Math.floor(Math.random() * 4); i < n; i++) {
       const b = document.createElement("i");
       b.style.top = Math.random() * 100 + "%";
-      b.style.height = 2 + Math.floor(Math.random() * 4) * 2 + "px";
-      b.style.background = tints[Math.floor(Math.random() * tints.length)];
-      b.style.transform = `translateX(${(Math.random() - 0.5) * 30}px)`;
+      b.style.height = 2 + Math.floor(Math.random() * 7) * 2 + "px";
+      b.style.background = pick();
+      b.style.transform = `translateX(${(Math.random() - 0.5) * 80}px)`;
+      bars.appendChild(b);
+    }
+    // corrupted pixel blocks
+    for (let i = 0, n = big ? 6 : 2; i < n; i++) {
+      const b = document.createElement("i"); b.className = "block";
+      b.style.top = Math.random() * 100 + "%"; b.style.left = Math.random() * 90 + "%";
+      b.style.width = 20 + Math.random() * 140 + "px"; b.style.height = 6 + Math.random() * 30 + "px";
+      b.style.background = pick();
       bars.appendChild(b);
     }
     document.body.appendChild(bars);
     document.body.classList.add("glitching");
-    setTimeout(() => { bars.remove(); document.body.classList.remove("glitching"); }, 180);
+    // big glitch: a random section tears sideways and shifts color
+    let torn = null;
+    if (big) {
+      const parts = [...document.querySelectorAll("body > header, body > section, body > footer")];
+      torn = parts[Math.floor(Math.random() * parts.length)];
+      torn.classList.add("glitch-tear");
+    }
+    setTimeout(() => {
+      bars.remove(); document.body.classList.remove("glitching");
+      if (torn) torn.classList.remove("glitch-tear");
+    }, big ? 320 : 220);
   }
   function scheduleGlitch() {
-    glitchTimer = setTimeout(() => { glitchOnce(); scheduleGlitch(); }, 1600 + Math.random() * 2600);
+    glitchTimer = setTimeout(() => { glitchOnce(); scheduleGlitch(); }, 500 + Math.random() * 1000);
   }
 
   function zukMode() {
@@ -1261,6 +1305,7 @@
 
   function exitZukMode() {
     document.body.classList.remove("zuk-mode", "glitching", "shake");
+    document.querySelectorAll(".glitch-tear").forEach(el => el.classList.remove("glitch-tear"));
     clearTimeout(glitchTimer); glitchTimer = null;
     document.querySelectorAll(".glitch-bars, .rain, .flash").forEach(el => el.remove());
     stopFireworks();
