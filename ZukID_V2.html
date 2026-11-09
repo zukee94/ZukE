@@ -134,11 +134,12 @@
   section { padding: 96px 0; }
   section:nth-of-type(odd) { background: var(--night); }
   section:nth-of-type(even) { background: var(--night-2); }
-  /* the section title sits at the bottom of its section, where you enter it while climbing */
-  .sec-head { display: flex; align-items: center; gap: 16px; margin-top: 14px; }
+  /* the section title (with its description under it) sits at the bottom of its section,
+     where you enter it while climbing */
+  .sec-head { display: flex; align-items: center; gap: 16px; margin-top: 48px; }
   .sec-num { font-size: 12px; padding: 8px 10px; color: var(--ink); }
   h2 { font-size: clamp(14px, 3vw, 20px); line-height: 1.5; }
-  .lede { color: var(--muted); margin-top: 40px; }
+  .lede { color: var(--muted); margin-top: 14px; }
 
   .card { padding: 24px; transition: transform .15s steps(2); }
   .card:hover { transform: translate(-3px, -3px); }
@@ -446,8 +447,8 @@
       <div class="win card wish"><canvas class="sprite" data-sprite="gta6"></canvas><h3>GTA VI</h3><p>Waited this long. What's a little longer?</p><span class="badge soon" data-release="2026-11-19T00:00:00+02:00" title="Countdown to release, Israel time">NOV 19, 2026</span></div>
       <div class="win card wish"><span class="sticker">MOST<br>ANTICIPATED</span><canvas class="sprite" data-sprite="hexe"></canvas><h3>ASSASSIN'S CREED HEXE</h3><p>A new Creed. Hood: ready. Haystacks: located.</p><span class="badge tba">RUMORED 2027</span></div>
     </div>
-    <p class="lede">The wishlist. My calendar is already cleared.</p>
     <div class="sec-head"><span class="sec-num win">07</span><h2 class="chrome">UP NEXT</h2></div>
+    <p class="lede">The wishlist. My calendar is already cleared.</p>
   </div>
 </section>
 
@@ -459,8 +460,8 @@
       <div class="win card ach shame"><canvas class="sprite" data-sprite="lostMap"></canvas><div><h3>MAP? WHAT MAP?</h3><p>Two hours lost in Crimson Desert looking for a quest marker. It was right behind me.</p><span class="rare">WRONG WAY</span></div></div>
       <div class="win card ach shame"><canvas class="sprite" data-sprite="pause"></canvas><div><h3>FORGOT TO PAUSE</h3><p>Put the controller down "for one second" in the middle of a boss fight. Came back to GAME OVER.</p><span class="rare">TOO COMMON</span></div></div>
     </div>
-    <p class="lede">Every legend has a few save files they'd rather delete.</p>
     <div class="sec-head"><span class="sec-num win">06</span><h2 class="chrome">HALL OF SHAME</h2></div>
+    <p class="lede">Every legend has a few save files they'd rather delete.</p>
   </div>
 </section>
 
@@ -483,8 +484,8 @@
         <span class="badge gold">1000+ HOURS</span>
       </div>
     </div>
-    <p class="lede">Ask me about any of these and I won't stop talking.</p>
     <div class="sec-head"><span class="sec-num win">05</span><h2 class="chrome">GAMES</h2></div>
+    <p class="lede">Ask me about any of these and I won't stop talking.</p>
   </div>
 </section>
 
@@ -498,8 +499,8 @@
         <div class="plat-shelf" id="platShelf" aria-hidden="true"></div>
       </div>
     </div>
-    <p class="lede">Every trophy in the game, collected. Not one skipped.</p>
     <div class="sec-head"><span class="sec-num win">04</span><h2 class="chrome">PLATINUM TROPHIES</h2></div>
+    <p class="lede">Every trophy in the game, collected. Not one skipped.</p>
   </div>
 </section>
 
@@ -513,8 +514,8 @@
       <div class="win card ach"><canvas class="sprite" data-sprite="scroll"></canvas><div><h3>SIDE QUEST ADDICT</h3><p>60 hours in. Main story: 12% complete.</p><span class="rare">LEGENDARY</span></div></div>
       <div class="win card ach"><canvas class="sprite" data-sprite="camera"></canvas><div><h3>PHOTO MODE PRO</h3><p>Spent longer framing the sunset than fighting the final boss.</p><span class="rare">0.5% OF PLAYERS</span></div></div>
     </div>
-    <p class="lede">Some of these may be slightly exaggerated.</p>
     <div class="sec-head"><span class="sec-num win">03</span><h2 class="chrome">ACHIEVEMENTS</h2></div>
+    <p class="lede">Some of these may be slightly exaggerated.</p>
   </div>
 </section>
 
@@ -526,8 +527,8 @@
       <div class="win card ach about"><canvas class="sprite" data-sprite="key"></canvas><div><h3>CURIOUS BY DEFAULT</h3><p>Every locked door, every hidden path. If it's there, I want to know what's behind it.</p></div></div>
       <div class="win card ach about"><canvas class="sprite" data-sprite="hourglass"></canvas><div><h3>AT MY OWN PACE</h3><p>No rush, no pressure. I take my time and enjoy the ride.</p></div></div>
     </div>
-    <p class="lede">The things that make me, me.</p>
     <div class="sec-head"><span class="sec-num win">02</span><h2 class="chrome">WHAT I'M ABOUT</h2></div>
+    <p class="lede">The things that make me, me.</p>
   </div>
 </section>
 
@@ -654,8 +655,8 @@
         </div>
       </div>
     </div>
-    <p class="lede">The short version, for anyone meeting me for the first time.</p>
     <div class="sec-head"><span class="sec-num win">01</span><h2 class="chrome">PLAYER PROFILE</h2></div>
+    <p class="lede">The short version, for anyone meeting me for the first time.</p>
   </div>
 </section>
 
