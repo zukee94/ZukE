@@ -1766,19 +1766,35 @@
     const dark = document.createElement("canvas"), dctx = dark.getContext("2d");
     let darkImg = null, lightUp = 0; // lightUp: 0 = dark, 1 = the lights come on (after reaching the top)
     const navEl = document.querySelector("nav");
-    // the barrels, rolling (drawn above the darkness)
-    function drawBarrels() {
+    // the halo as the darkness layer last drew it, so other things can tell how dark a spot is
+    let lastHalo = { x: 0, y: 0, R: 0, core: 0, darkness: 0, top: 0 };
+    function darkAt(x, y) {
+      const h = lastHalo;
+      if (lightUp >= 1 || y < h.top) return 0;
+      const dist = Math.hypot(x - h.x, y - h.y);
+      if (dist >= h.R) return h.darkness;
+      return Math.max(0, Math.min(BANDS, Math.floor(Math.max(0, (dist - h.core) / (h.R - h.core)) * BANDS))) / BANDS * h.darkness;
+    }
+    // The barrels. The first pass (under the darkness) draws the real barrel, so in the dark it's
+    // just a shadow; the second pass (on top) adds a gray outline that fades out inside the halo.
+    function drawBarrels(outline) {
       const sy = scrollY;
       for (const b of barrels) {
         const ly = barrelLines[b.line];
         if (ly === undefined) continue;
-        const by = ly - BW + b.yOff - sy;
-        if (by < -BW || by > innerHeight + BW) continue;
-        ctx.save();
-        ctx.translate(Math.round(b.x + BW / 2), Math.round(by + BW / 2));
-        ctx.rotate(Math.round(b.rot / (Math.PI / 4)) * (Math.PI / 4)); // 8 steps keeps it pixel-crisp
-        drawRows(BARREL, PAL, -BW / 2, -BW / 2, BS);
-        ctx.restore();
+        const bx = Math.round(b.x), by = Math.round(ly - BH + b.yOff - sy);
+        if (by < -BH || by > innerHeight + BH) continue;
+        if (!outline) {
+          const phase = ((Math.floor(b.roll / 4) * b.dir) % 4 + 4) % 4;
+          drawRows(BARREL_FRAMES[phase], PAL, bx, by, BS);
+          continue;
+        }
+        const a = darkAt(bx + BW / 2, by + BH / 2) / DARKNESS;
+        if (a <= 0.05) continue;
+        ctx.globalAlpha = Math.min(1, a) * 0.85;
+        ctx.fillStyle = "#9a9db5";
+        for (const [x, y] of BARREL_RING) ctx.fillRect(bx + x * BS, by + y * BS, BS, BS);
+        ctx.globalAlpha = 1;
       }
     }
     function drawDarkness(hx, hy) {
@@ -1794,6 +1810,7 @@
       const cx = hx / DARK_PX, cy = (hy - top) / DARK_PX;
       // as the lights come on, the halo spreads out and the darkness fades everywhere
       const darkness = DARKNESS * (1 - lightUp);
+      lastHalo = { x: hx, y: hy, R: R * DARK_PX, core: core * DARK_PX, darkness, top };
       for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
         const dist = Math.hypot(x + 0.5 - cx, y + 0.5 - cy);
         let a = darkness;
@@ -1836,13 +1853,43 @@
     let p = null, plats = [], movers = [], solids = [], textLines = [], btn = null, footer = null;
     let won = false, warped = false, frameNo = 0, startTime = 0, lookUntil = 0;
     // Barrels roll along the section lines near you, from one screen edge to the other, hopping
-    // over the gaps. They're drawn above the darkness so you can see them coming. One that hits
-    // you knocks you down below that line.
-    const BARREL = [
-      "....XXXX....", "..XXeeeeXX..", ".XeeEeeEeeX.", ".XeeEeeEeeX.", "XeeeEeeEeeeX", "XEEEEEEEEEEX",
-      "XeeeEeeEeeeX", "XeeeEeeEeeeX", ".XeeEeeEeeX.", ".XeeEeeEeeX.", "..XXeeeeXX..", "....XXXX...."
-    ];
-    const BS = 3, BW = 12 * BS, HOP_H = 40;   // barrel size on screen, how high it hops over a gap
+    // over the gaps. In the dark you only see a shadow with a gray outline; inside the halo the
+    // barrel itself shows. One that hits you knocks you down below that line.
+    const BCOLS = 14, BROWS = 12, BS = 3, BW = BCOLS * BS, BH = BROWS * BS, HOP_H = 40;
+    const inBarrel = (x, y) => x >= 0 && y >= 0 && x < BCOLS && y < BROWS &&
+      !((x === 0 || x === BCOLS - 1) && (y <= 1 || y >= BROWS - 2)) && !((x === 1 || x === BCOLS - 2) && (y === 0 || y === BROWS - 1));
+    // a wooden barrel lying on its side: shaded staves, darker ends, two iron hoops; the stave seams
+    // move with `phase`, so it looks like it's turning as it rolls
+    function barrelRows(phase) {
+      const rows = [];
+      for (let y = 0; y < BROWS; y++) {
+        let row = "";
+        for (let x = 0; x < BCOLS; x++) {
+          let ch = ".";
+          if (inBarrel(x, y)) {
+            const edge = !inBarrel(x - 1, y) || !inBarrel(x + 1, y) || !inBarrel(x, y - 1) || !inBarrel(x, y + 1);
+            const wood = y <= 2 ? "d" : y <= 5 ? "e" : y <= 8 ? "D" : "E";
+            if (edge) ch = "k";
+            else if (x === 3 || x === BCOLS - 4) ch = y <= 3 ? "g" : y <= 7 ? "G" : "X";   // iron hoops
+            else if (x === 1 || x === BCOLS - 2) ch = y <= 4 ? "D" : "E";                 // the barrel's ends
+            else if ((y + phase) % 4 === 0) ch = y <= 5 ? "D" : "a";                       // stave seams
+            else ch = wood;
+          }
+          row += ch;
+        }
+        rows.push(row);
+      }
+      return rows;
+    }
+    const BARREL_FRAMES = [0, 1, 2, 3].map(barrelRows);
+    // the ring just outside the barrel, for its gray outline in the dark
+    const BARREL_RING = [];
+    for (let y = -1; y <= BROWS; y++) for (let x = -1; x <= BCOLS; x++) {
+      if (inBarrel(x, y)) continue;
+      let near = false;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (inBarrel(x + dx, y + dy)) near = true;
+      if (near) BARREL_RING.push([x, y]);
+    }
     let barrels = [], barrelNext = [], barrelLines = [];
     let lastAct = Math.random() < 0.5 ? "nose" : "belly"; // idle animations take turns, so neither repeats
     const controlsHint = () => hasMouse.matches ? "← → RUN · ↓ DROP · SPACE JUMP ×2" : "◀ ▶ RUN · ▼ DROP · JUMP ×2";
@@ -2199,7 +2246,7 @@
           if (barrelNext[i] === undefined) barrelNext[i] = nowMs + 1500 + Math.random() * 2500;
           if (nowMs < barrelNext[i] || barrels.some(b => b.line === i)) return;
           const d = Math.random() < 0.5 ? 1 : -1;
-          barrels.push({ line: i, x: d > 0 ? -BW : innerWidth, dir: d, speed: 2.4 + Math.random(), rot: 0, yOff: 0, vy: 0 });
+          barrels.push({ line: i, x: d > 0 ? -BW : innerWidth, dir: d, speed: 2.4 + Math.random(), roll: 0, yOff: 0, vy: 0 });
           barrelNext[i] = Infinity; // the next one is scheduled when this one is gone
         });
       }
@@ -2207,7 +2254,7 @@
       barrels = barrels.filter(b => {
         const ly = lines[b.line];
         if (ly === undefined) return false;
-        b.x += b.dir * b.speed; b.rot += (b.dir * b.speed) / (BW / 2);
+        b.x += b.dir * b.speed; b.roll += b.speed;
         const segs = lineSegs[b.line] || [], cx = b.x + BW / 2;
         // reaching a gap: hop across it to the next piece of line
         if (b.yOff === 0 && b.vy === 0 && !segs.some(sg => cx >= sg.x1 && cx <= sg.x2)) {
@@ -2217,10 +2264,10 @@
           b.g = 8 * HOP_H / (frames * frames); b.vy = -b.g * frames / 2; // a low hop, about HOP_H high
         }
         if (b.vy || b.yOff < 0) { b.vy += b.g; b.yOff += b.vy; if (b.yOff >= 0) { b.yOff = 0; b.vy = 0; } }
-        const top = ly - BW + b.yOff;
+        const top = ly - BH + b.yOff;
         // a barrel that touches you knocks you down below its line
         if (!won && !p.intro && p.hurt <= 0 &&
-            b.x < p.x + W - INSET && b.x + BW > p.x + INSET && top < p.y + H && top + BW > p.y + 4) {
+            b.x < p.x + W - INSET && b.x + BW > p.x + INSET && top < p.y + H && top + BH > p.y + 4) {
           p.y = ly + 3; p.ground = null; p.vy = 2; p.vx = b.dir * 4;
           p.spin = true; p.rot = 0; p.doubleUsed = true; p.hurt = 70;
           puff(p.x + W / 2, ly - sy, 14);
@@ -2250,7 +2297,7 @@
       const cs = getComputedStyle(document.body);
       const c = { edge: cs.getPropertyValue("--win-edge").trim() };
       lines.forEach((y, i) => drawLine(i, y, sy2, c));
-      barrelLines = lines; // the barrels are drawn after the darkness (see drawBarrels)
+      barrelLines = lines; // the barrels are drawn around the darkness layer (see drawBarrels)
 
       // the hero
       const vx = Math.round(p.x), vy = Math.round(p.y - sy2);
@@ -2308,8 +2355,9 @@
       ctx.clearRect(0, 0, fx.width, fx.height);
       frame();
       lightUp = won ? Math.min(1, lightUp + 0.012) : Math.max(0, lightUp - 0.05);
+      drawBarrels(false);
       drawDarkness(heroX, heroY);
-      drawBarrels();
+      drawBarrels(true);
       particles = particles.filter(p => p.life > 0);
       if (particles.length > 2000) particles.splice(0, particles.length - 2000);
       for (const p of particles) {
