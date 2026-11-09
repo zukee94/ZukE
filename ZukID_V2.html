@@ -132,8 +132,8 @@
   @keyframes blink { 50% { opacity: 0; } }
 
   section { padding: 96px 0; }
-  section:nth-of-type(odd) { background: var(--night); }
-  section:nth-of-type(even) { background: var(--night-2); }
+  section:nth-of-type(even) { background: var(--night); }
+  section:nth-of-type(odd) { background: var(--night-2); }
   /* the section title (with its description under it) sits at the bottom of its section,
      where you enter it while climbing */
   .sec-head { display: flex; align-items: center; gap: 16px; margin-top: 48px; }
@@ -207,6 +207,15 @@
   /* Hall of Shame: same cards as achievements, in red */
   .shame h3 { color: var(--pink); }
   .shame .rare { color: #ff4a5e; }
+  /* Side Quests: a quest log of progress bars, each with its icon */
+  .quests { display: grid; gap: 26px; }
+  .quest { display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: center; }
+  .quest > canvas { width: 54px; height: 54px; }
+  .q-note { font-size: 20px; color: var(--muted); margin-top: 2px; }
+  .q-tag { font-family: "Press Start 2P", monospace; font-size: 8px; color: var(--gold); margin-right: 6px; }
+  .q-tag.done { color: var(--green); }
+  /* a finished quest's bar fills in green */
+  .bar.done .cell.on { background: var(--green); box-shadow: inset 0 3px 0 #9dffc9, inset 0 -3px 0 #128a52; }
   /* Up Next: text-only cards, badge pinned to the bottom */
   .wish { display: flex; flex-direction: column; align-items: flex-start; }
   .wish canvas { width: 72px; height: 72px; margin-bottom: 14px; }
@@ -425,6 +434,7 @@
       <a href="#games">GAMES</a>
       <a href="#shame">SHAME</a>
       <a href="#upnext">UP NEXT</a>
+      <a href="#sidequests">SIDE QUESTS</a>
     </div>
   </div>
 </nav>
@@ -437,6 +447,23 @@
   </div>
 </footer>
 
+<section id="sidequests">
+  <div class="wrap">
+    <div class="win card">
+      <div class="divider">QUEST LOG</div>
+      <div class="quests">
+          <div class="quest"><canvas class="sprite" data-sprite="respawn"></canvas><div class="stat"><div class="stat-row"><span>Survive a car crash &amp; a coma</span><b>100<small>/100</small></b></div><div class="bar done"><i data-w="100"></i></div><p class="q-note"><span class="q-tag done">✓ COMPLETE</span> Woke up, respawned, and picked the controller back up.</p></div></div>
+          <div class="quest"><canvas class="sprite" data-sprite="burger"></canvas><div class="stat"><div class="stat-row"><span>Choose lunch to order</span><b>50<small>/100</small></b></div><div class="bar"><i data-w="50"></i></div><p class="q-note"><span class="q-tag">IN PROGRESS</span> Narrowed it down to two places. Then three. Then four.</p></div></div>
+          <div class="quest"><canvas class="sprite" data-sprite="ramen"></canvas><div class="stat"><div class="stat-row"><span>Find the best Kosher Ramen</span><b>50<small>/100</small></b></div><div class="bar"><i data-w="50"></i></div><p class="q-note"><span class="q-tag">IN PROGRESS</span> Slurping my way through every bowl in town.</p></div></div>
+          <div class="quest"><canvas class="sprite" data-sprite="cinema"></canvas><div class="stat"><div class="stat-row"><span>Watch the whole MCU</span><b>90<small>/100</small></b></div><div class="bar"><i data-w="90"></i></div><p class="q-note"><span class="q-tag">IN PROGRESS</span> Nearly every movie and series down.</p></div></div>
+          <div class="quest"><canvas class="sprite" data-sprite="cinema"></canvas><div class="stat"><div class="stat-row"><span>Watch the whole DCU</span><b>80<small>/100</small></b></div><div class="bar"><i data-w="80"></i></div><p class="q-note"><span class="q-tag">IN PROGRESS</span> Catching up, one movie at a time.</p></div></div>
+      </div>
+    </div>
+    <div class="sec-head"><span class="sec-num win">08</span><h2 class="chrome">SIDE QUESTS</h2></div>
+    <p class="lede">Life outside the controller.</p>
+  </div>
+</section>
+
 <section id="upnext">
   <div class="wrap">
     <div class="grid3">
@@ -444,8 +471,8 @@
       <div class="win card wish"><canvas class="sprite" data-sprite="laufey"></canvas><h3>GOD OF WAR LAUFEY</h3><p>More Norse family drama. Count me in.</p><span class="badge soon" data-release="2027-05-20T00:00:00+03:00" title="Countdown to release, Israel time">MAY 20, 2027</span></div>
       <div class="win card wish"><canvas class="sprite" data-sprite="tombRaider"></canvas><h3>TOMB RAIDER: LEGACY OF ATLANTIS</h3><p>Ancient ruins, deadly traps, zero health and safety inspections.</p><span class="badge soon" data-release="2027-02-12T00:00:00+02:00" title="Countdown to release, Israel time">FEB 12, 2027</span></div>
       <div class="win card wish"><canvas class="sprite" data-sprite="phantomBlade"></canvas><h3>PHANTOM BLADE ZERO</h3><p>Fast swords, faster deaths. Mostly mine.</p><span class="badge">ALREADY OUT</span></div>
-      <div class="win card wish"><canvas class="sprite" data-sprite="gta6"></canvas><h3>GTA VI</h3><p>Waited this long. What's a little longer?</p><span class="badge soon" data-release="2026-11-19T00:00:00+02:00" title="Countdown to release, Israel time">NOV 19, 2026</span></div>
-      <div class="win card wish"><span class="sticker">MOST<br>ANTICIPATED</span><canvas class="sprite" data-sprite="hexe"></canvas><h3>ASSASSIN'S CREED HEXE</h3><p>A new Creed. Hood: ready. Haystacks: located.</p><span class="badge tba">RUMORED 2027</span></div>
+      <div class="win card wish"><span class="sticker">MOST<br>ANTICIPATED</span><canvas class="sprite" data-sprite="gta6"></canvas><h3>GTA VI</h3><p>Waited this long. What's a little longer?</p><span class="badge soon" data-release="2026-11-19T00:00:00+02:00" title="Countdown to release, Israel time">NOV 19, 2026</span></div>
+      <div class="win card wish"><canvas class="sprite" data-sprite="hexe"></canvas><h3>ASSASSIN'S CREED HEXE</h3><p>A new Creed. Hood: ready. Haystacks: located.</p><span class="badge tba">RUMORED 2027</span></div>
     </div>
     <div class="sec-head"><span class="sec-num win">07</span><h2 class="chrome">UP NEXT</h2></div>
     <p class="lede">The wishlist. My calendar is already cleared.</p>
@@ -642,7 +669,7 @@
           <dl class="id-meta">
             <dt>NAME</dt><dd>ZUK</dd>
             <dt>CLASS</dt><dd>GAMER / JOKER</dd>
-            <dt>LEVEL</dt><dd id="level">99</dd>
+            <dt>LEVEL</dt><dd id="level">32</dd>
             <dt>GENRE</dt><dd>ACTION / 3RD PERSON</dd>
             <dt>LIVES</dt>
             <dd class="lives" aria-label="2 of 3 lives left">
@@ -984,6 +1011,80 @@
       "..GGGGGGG...",
       "..GGG.GGG...",
       ".kwww.kwww.."
+    ],
+    // Side Quests icons
+    // a heart with a heartbeat line running through it: respawned
+    respawn() {
+      const g = [
+        '................',
+        '..rrrr....rrrr..',
+        '.rrrrrr..rrrrrr.',
+        'rwwrrrrrrrrrrrrR',
+        'rwrrrrrrrrrrrrrR',
+        'rrrrrrrrrrrrrrRR',
+        'rrrrrrrrrrrrrrRR',
+        '.rrrrrrrrrrrrRR.',
+        '..rrrrrrrrrrRR..',
+        '...rrrrrrrrRR...',
+        '....rrrrrrRR....',
+        '.....rrrrRR.....',
+        '......rrRR......',
+        '.......RR.......'
+      ].map(r => [...r]);
+      // the heartbeat line: flat, a big spike, a small bump, flat again
+      const pts = [[0, 6], [4, 6], [5, 3], [6, 9], [7, 6], [9, 6], [10, 4], [11, 6], [15, 6]];
+      for (let i = 0; i < pts.length - 1; i++) {
+        const [x0, y0] = pts[i], [x1, y1] = pts[i + 1], n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
+        for (let k = 0; k <= n; k++) g[Math.round(y0 + (y1 - y0) * k / n)][Math.round(x0 + (x1 - x0) * k / n)] = 'N';
+      }
+      return g.map(r => r.join(''));
+    },
+    // a stacked burger: sesame bun, lettuce, tomato, patty, cheese
+    burger: [
+      "................",
+      ".....YYYYYY.....",
+      "...YYcYYYYcYY...",
+      "..YYYYYcYYYYYY..",
+      "..YYYYYYYYYYYY..",
+      ".NNMNNNNNMNNNNN.",
+      "..rrrrRrrrrRrr..",
+      "..EEEEEEEEEEEE..",
+      "..EaEEEaEEEaEE..",
+      ".yyyyyyyyyyyyyy.",
+      "..YYYYYYYYYYYY..",
+      "...YYYYYYYYYY...",
+      "................"
+    ],
+    // a bowl of ramen: chopsticks, steam, half an egg and scallions, in a red bowl
+    ramen: [
+      "............EE..",
+      "...........EE...",
+      "....w.w...EE....",
+      ".....w.w.EE.....",
+      ".oyyoyYYwoyyNNo.",
+      ".RRRRRRRRRRRRRR.",
+      ".rrwrrrrrrrrrrr.",
+      "..rrrrrrrrrrrr..",
+      "...rrRrrRrrRr...",
+      "....rrrrrrrr....",
+      ".....RRRRRR....."
+    ],
+    // a cinema clapperboard: striped clapper on top, slate board below
+    cinema: [
+      "................",
+      ".........wwkkww.",
+      ".....kkwwkkwwkk.",
+      ".kkwwkkwwkkww...",
+      ".kk.............",
+      ".kwwkkwwkkwwkkk.",
+      ".kkkkkkkkkkkkkk.",
+      ".kGGGGGGGGGGGGk.",
+      ".kGWWWGGWWWGGGk.",
+      ".kGGGGGGGGGGGGk.",
+      ".kGWWWWGGWWWWGk.",
+      ".kGGGGGGGGGGGGk.",
+      ".kGWWWGGGGGGGGk.",
+      ".kkkkkkkkkkkkkk."
     ],
     // Hall of Shame icons
     // a sword snapped in two
@@ -1441,7 +1542,7 @@
       cell.className = "cell"; cell.style.setProperty("--i", i);
       bar.appendChild(cell);
     }
-    if (value < LOW) { bar.classList.add("low"); bar.closest(".stat").classList.add("low"); }
+    if (value < LOW && !bar.closest(".quests")) { bar.classList.add("low"); bar.closest(".stat").classList.add("low"); }
     bar.setAttribute("role", "meter");
     bar.setAttribute("aria-valuemin", 0); bar.setAttribute("aria-valuemax", 100); bar.setAttribute("aria-valuenow", value);
   });
@@ -1464,6 +1565,7 @@
     });
   }, { threshold: .2 });
   io.observe(document.querySelector("#profile .stats"));
+  io.observe(document.querySelector("#sidequests .quests"));
 
   // Platinum counter: counts 0 → 19 when scrolled into view, lighting a trophy per tick
   const PLATS = 19, platNum = document.getElementById("platNum"), shelf = document.getElementById("platShelf");
