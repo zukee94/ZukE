@@ -213,7 +213,8 @@
   /* release badges: a ticking countdown (gold), a release window (muted), or out now (green) */
   .badge.soon { color: #2b1300; background: var(--gold); box-shadow: inset 0 2px 0 #fff1a8, inset 0 -2px 0 var(--rust), 0 -3px 0 var(--shadow), 0 3px 0 var(--shadow), -3px 0 0 var(--shadow), 3px 0 0 var(--shadow), 0 6px 0 var(--shadow); }
   .badge.soon { font-size: 8px; gap: 6px; max-width: 100%; line-height: 1.6; } /* wraps instead of overflowing a narrow card */
-  .badge.soon::before { content: "⏱"; font-size: 10px; }
+  /* a tiny pixel-art stopwatch */
+  .badge.soon::before { content: ""; flex: none; width: 14px; height: 16px; background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 7 8' shape-rendering='crispEdges' fill='%232b1300'><rect x='2' y='0' width='1' height='1'/><rect x='3' y='0' width='1' height='1'/><rect x='4' y='0' width='1' height='1'/><rect x='3' y='1' width='1' height='1'/><rect x='1' y='2' width='1' height='1'/><rect x='2' y='2' width='1' height='1'/><rect x='3' y='2' width='1' height='1'/><rect x='4' y='2' width='1' height='1'/><rect x='5' y='2' width='1' height='1'/><rect x='0' y='3' width='1' height='1'/><rect x='3' y='3' width='1' height='1'/><rect x='6' y='3' width='1' height='1'/><rect x='0' y='4' width='1' height='1'/><rect x='3' y='4' width='1' height='1'/><rect x='6' y='4' width='1' height='1'/><rect x='0' y='5' width='1' height='1'/><rect x='4' y='5' width='1' height='1'/><rect x='6' y='5' width='1' height='1'/><rect x='0' y='6' width='1' height='1'/><rect x='6' y='6' width='1' height='1'/><rect x='1' y='7' width='1' height='1'/><rect x='2' y='7' width='1' height='1'/><rect x='3' y='7' width='1' height='1'/><rect x='4' y='7' width='1' height='1'/><rect x='5' y='7' width='1' height='1'/></svg>") no-repeat center / contain; image-rendering: pixelated; }
   .badge.tba { color: var(--ink); background: var(--cell-off); box-shadow: inset 0 2px 0 #3a4aa0, inset 0 -2px 0 var(--win-inset), 0 -3px 0 var(--shadow), 0 3px 0 var(--shadow), -3px 0 0 var(--shadow), 3px 0 0 var(--shadow), 0 6px 0 var(--shadow); }
   /* a sticker slapped on the corner of the most anticipated game */
   .sticker {
@@ -674,7 +675,7 @@
 </div>
 <div class="pad" aria-hidden="true">
   <div><button type="button" data-key="left" tabindex="-1">◀</button><button type="button" data-key="right" tabindex="-1">▶</button></div>
-  <button type="button" data-key="jump" tabindex="-1">JUMP</button>
+  <div><button type="button" data-key="down" tabindex="-1">▼</button><button type="button" data-key="jump" tabindex="-1">JUMP</button></div>
 </div>
 <div class="cheat win" id="cheat" role="alert"><div class="big">CHEAT ACTIVATED</div><div class="small">ZUK MODE ON<br>RAINBOW STATS · FIREWORKS · GLITCHES</div></div>
 <button class="dismiss" id="dismiss" type="button">DISMISS ZUK MODE</button>
@@ -1815,19 +1816,28 @@
     const between = ([a, b]) => a + Math.random() * (b - a);
     const INSET = 5;             // the sprite's empty margin, so collisions use the visible body
     const LOOK_MS = 2500;        // scrolling by hand pauses the camera this long, so you can look around
-    const keys = { left: false, right: false, jump: false, pressed: false };
+    const keys = { left: false, right: false, down: false, jump: false, pressed: false };
     let p = null, plats = [], movers = [], solids = [], textLines = [], btn = null, footer = null;
     let won = false, warped = false, frameNo = 0, startTime = 0, lookUntil = 0;
+    // Barrels roll along the section lines near you, from one screen edge, and fall away through
+    // the gaps. One that hits you knocks you down below that line.
+    const BARREL = [
+      "....XXXX....", "..XXeeeeXX..", ".XeeEeeEeeX.", ".XeeEeeEeeX.", "XeeeEeeEeeeX", "XEEEEEEEEEEX",
+      "XeeeEeeEeeeX", "XeeeEeeEeeeX", ".XeeEeeEeeX.", ".XeeEeeEeeX.", "..XXeeeeXX..", "....XXXX...."
+    ];
+    const BS = 2, BW = 12 * BS;   // barrel size on screen
+    let barrels = [], barrelNext = [];
     let lastAct = Math.random() < 0.5 ? "nose" : "belly"; // idle animations take turns, so neither repeats
-    const controlsHint = () => hasMouse.matches ? "← → RUN · SPACE JUMP ×2" : "◀ ▶ RUN · JUMP ×2";
+    const controlsHint = () => hasMouse.matches ? "← → RUN · ↓ DROP · SPACE JUMP ×2" : "◀ ▶ RUN · ▼ DROP · JUMP ×2";
 
     function onKey(e, isDown) {
       const k = e.key;
-      if (k !== "ArrowLeft" && k !== "ArrowRight" && k !== " " && k !== "Spacebar") return;
+      if (k !== "ArrowLeft" && k !== "ArrowRight" && k !== "ArrowDown" && k !== " " && k !== "Spacebar") return;
       e.preventDefault(); // no page scrolling while playing
       lookUntil = 0;
       if (k === "ArrowLeft") keys.left = isDown;
       else if (k === "ArrowRight") keys.right = isDown;
+      else if (k === "ArrowDown") keys.down = isDown;
       else { if (isDown && !keys.jump) keys.pressed = true; keys.jump = isDown; }
     }
     const floorY = () => document.documentElement.scrollHeight - 2;
@@ -1844,6 +1854,20 @@
     // from the first to the last real character on the line (no spaces, margins or empty box area).
     // Measured with the cards at rest; each line remembers which sliding card it's in,
     // so it moves along with it.
+    const measure = document.createElement("canvas").getContext("2d"), dropCache = new Map();
+    function glyphDrop(cs, ch, boxH, em) {
+      const font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`, key = font + "|" + ch;
+      let v = dropCache.get(key);
+      if (v === undefined) {
+        measure.font = font;
+        const m = measure.measureText(ch);
+        v = m.fontBoundingBoxAscent !== undefined && m.actualBoundingBoxAscent > 0
+          ? Math.max(0, (boxH - (m.fontBoundingBoxAscent + m.fontBoundingBoxDescent)) / 2 + m.fontBoundingBoxAscent - m.actualBoundingBoxAscent)
+          : Math.max(0, (boxH - em) / 2) + em * 0.18; // older browsers: the old estimate
+        dropCache.set(key, v);
+      }
+      return v;
+    }
     function buildTextLines() {
       textLines = [];
       const range = document.createRange();
@@ -1863,8 +1887,9 @@
           range.setStart(n, i); range.setEnd(n, i + 1);
           const r = range.getBoundingClientRect();
           if (r.width === 0 || r.height === 0) continue;
-          // stand on the top of the letters, not the invisible top of the line box
-          const top = r.top + Math.max(0, (r.height - em) / 2) + em * 0.18 + sy;
+          // stand on the real top of the letter: the browser's text metrics say how far below the
+          // top of the text box the glyph starts (pixel fonts fill the box, VT323 sits lower in it)
+          const top = r.top + glyphDrop(cs, text[i], r.height, em) + sy;
           // characters on the same line join into one platform; a gap wider than a space splits it
           const prev = textLines[textLines.length - 1];
           if (prev && prev.mover === mover && Math.abs(prev.y - top) < em * 0.4 && r.left - prev.x2 <= em * 0.7 && r.left >= prev.x1) {
@@ -1949,11 +1974,12 @@
       const dir = Math.random() < 0.5 ? -1 : 1;
       // leaps out far enough to land beside the button, not under it
       p = { x, y: r.top + scrollY + r.height / 2 - H / 2, vx: dir * (r.width / 2 + W) / 34, vy: -11,
-            ground: null, groundX: 0, coyote: 0, buffer: 0, face: dir, spin: true, rot: 0, doubleUsed: true, intro: true, idle: 0,
+            ground: null, groundX: 0, coyote: 0, buffer: 0, face: dir, spin: true, rot: 0, doubleUsed: true, intro: true, idle: 0, hurt: 0,
             act: null, actT: 0, actLen: 0, nextAct: between(IDLE_FIRST) };
       puff(r.left + r.width / 2, r.top + r.height / 2, 14);
       won = false; warped = false; frameNo = 0; startTime = performance.now(); lookUntil = 0;
-      Object.assign(keys, { left: false, right: false, jump: false, pressed: false });
+      barrels = []; barrelNext = [];
+      Object.assign(keys, { left: false, right: false, down: false, jump: false, pressed: false });
       extraEl.innerHTML = `CLIMB TO THE TOP!<br>${controlsHint()}`;
     }
     // Fast travel: the nav links drop the hero in at the top of that section
@@ -2114,6 +2140,10 @@
       const feet = p.y + H, c1 = p.x + W * 0.25, c2 = p.x + W * 0.75;
       const land = () => { p.vy = 0; p.spin = false; p.doubleUsed = false; };
 
+      // holding Down drops you through whatever you're standing on (the floor still holds)
+      const dropping = keys.down && !p.intro;
+      if (dropping && p.ground && !p.ground.floor) { p.ground = null; p.vy = Math.max(p.vy, 1); }
+
       if (p.ground) {
         // still standing on something?
         if (p.ground.floor) p.y = floorY() - H;
@@ -2125,7 +2155,7 @@
       } else if (p.vy >= 0) {
         // land on the first platform top crossed this frame (they're one-way, jump up through them)
         let best = null;
-        if (!p.intro) {
+        if (!p.intro && !dropping) {
           for (const o of list) {
             if (c2 >= o.x1 && c1 <= o.x2 && prevFeet <= o.y + 1 && feet >= o.y && (!best || o.y < best.y)) best = o;
           }
@@ -2143,6 +2173,39 @@
       if (!p.idle) { p.act = null; p.nextAct = between(IDLE_FIRST); }
       else if (!p.act && p.idle >= p.nextAct) { p.act = lastAct = lastAct === "nose" ? "belly" : "nose"; p.actT = 0; p.actLen = 180 + Math.random() * 180; }
       if (p.act && ++p.actT > p.actLen) { p.act = null; p.nextAct = p.idle + between(IDLE_GAP); }
+
+      // ---- barrels ----
+      const nowMs = performance.now(), mid = sy + innerHeight / 2;
+      if (!won && !p.intro) {
+        lines.forEach((ly, i) => {
+          if (Math.abs(ly - mid) > innerHeight) return;                      // only lines near you
+          if (barrelNext[i] === undefined) barrelNext[i] = nowMs + 1500 + Math.random() * 2500;
+          if (nowMs < barrelNext[i] || barrels.some(b => b.line === i)) return;
+          const d = Math.random() < 0.5 ? 1 : -1;
+          barrels.push({ line: i, x: d > 0 ? -BW : innerWidth, dir: d, speed: 2.4 + Math.random(), rot: 0, drop: 0, vy: 0 });
+          barrelNext[i] = Infinity; // the next one is scheduled when this one is gone
+        });
+      }
+      if (p.hurt > 0) p.hurt--;
+      barrels = barrels.filter(b => {
+        const ly = lines[b.line];
+        if (ly === undefined) return false;
+        b.x += b.dir * b.speed; b.rot += (b.dir * b.speed) / (BW / 2);
+        const cx = b.x + BW / 2;
+        if (!b.drop && !(lineSegs[b.line] || []).some(sg => cx >= sg.x1 && cx <= sg.x2)) b.drop = 0.01; // over a gap: it falls
+        if (b.drop) { b.vy += 0.5; b.drop += b.vy; }
+        const top = ly - BW + b.drop;
+        // a rolling barrel that touches you knocks you down below its line
+        if (!b.drop && !won && !p.intro && p.hurt <= 0 &&
+            b.x < p.x + W - INSET && b.x + BW > p.x + INSET && top < p.y + H && top + BW > p.y + 4) {
+          p.y = ly + 3; p.ground = null; p.vy = 2; p.vx = b.dir * 4;
+          p.spin = true; p.rot = 0; p.doubleUsed = true; p.hurt = 70;
+          puff(p.x + W / 2, ly - sy, 14);
+        }
+        const gone = b.x < -BW * 2 || b.x > innerWidth + BW || b.drop > innerHeight;
+        if (gone) barrelNext[b.line] = nowMs + 2000 + Math.random() * 4000;
+        return !gone;
+      });
 
       // reached the footer at the top? (fully above the line under it)
       const fb = footer.getBoundingClientRect().bottom + sy;
@@ -2164,12 +2227,23 @@
       const cs = getComputedStyle(document.body);
       const c = { edge: cs.getPropertyValue("--win-edge").trim() };
       lines.forEach((y, i) => drawLine(i, y, sy2, c));
+      // the barrels, rolling
+      for (const b of barrels) {
+        const by = lines[b.line] - BW + b.drop - sy2;
+        if (by < -BW || by > innerHeight + BW) continue;
+        ctx.save();
+        ctx.translate(Math.round(b.x + BW / 2), Math.round(by + BW / 2));
+        ctx.rotate(Math.round(b.rot / (Math.PI / 4)) * (Math.PI / 4)); // 8 steps keeps it pixel-crisp
+        drawRows(BARREL, PAL, -BW / 2, -BW / 2, BS);
+        ctx.restore();
+      }
 
       // the hero
       const vx = Math.round(p.x), vy = Math.round(p.y - sy2);
       const running = p.ground && Math.abs(p.vx) > 0.6;
       const rows = !p.ground ? JUMP : running ? (Math.floor(frameNo / 6) % 2 ? RUN_A : RUN_B) : IDLE;
       heroX = vx + W / 2; heroY = vy + H / 2;
+      if (p.hurt > 0 && Math.floor(p.hurt / 5) % 2) return; // blinking after a barrel hit
       ctx.save();
       ctx.translate(vx + W / 2, vy + H / 2);
       if (p.spin && !p.ground) { p.rot += 0.35 * p.face; ctx.rotate(p.rot); }
