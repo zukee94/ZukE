@@ -134,10 +134,11 @@
   section { padding: 96px 0; }
   section:nth-of-type(odd) { background: var(--night); }
   section:nth-of-type(even) { background: var(--night-2); }
-  .sec-head { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+  /* the section title sits at the bottom of its section, where you enter it while climbing */
+  .sec-head { display: flex; align-items: center; gap: 16px; margin-top: 14px; }
   .sec-num { font-size: 12px; padding: 8px 10px; color: var(--ink); }
   h2 { font-size: clamp(14px, 3vw, 20px); line-height: 1.5; }
-  .lede { color: var(--muted); margin-bottom: 40px; }
+  .lede { color: var(--muted); margin-top: 40px; }
 
   .card { padding: 24px; transition: transform .15s steps(2); }
   .card:hover { transform: translate(-3px, -3px); }
@@ -437,8 +438,6 @@
 
 <section id="upnext">
   <div class="wrap">
-    <div class="sec-head"><span class="sec-num win">07</span><h2 class="chrome">UP NEXT</h2></div>
-    <p class="lede">The wishlist. My calendar is already cleared.</p>
     <div class="grid3">
       <div class="win card wish"><canvas class="sprite" data-sprite="witcher4"></canvas><h3>THE WITCHER 4</h3><p>Monster contracts, hard choices, and another 100 hours I don't have.</p><span class="badge tba">TARGETING 2028</span></div>
       <div class="win card wish"><canvas class="sprite" data-sprite="laufey"></canvas><h3>GOD OF WAR LAUFEY</h3><p>More Norse family drama. Count me in.</p><span class="badge soon" data-release="2027-05-20T00:00:00+03:00" title="Countdown to release, Israel time">MAY 20, 2027</span></div>
@@ -447,26 +446,26 @@
       <div class="win card wish"><canvas class="sprite" data-sprite="gta6"></canvas><h3>GTA VI</h3><p>Waited this long. What's a little longer?</p><span class="badge soon" data-release="2026-11-19T00:00:00+02:00" title="Countdown to release, Israel time">NOV 19, 2026</span></div>
       <div class="win card wish"><span class="sticker">MOST<br>ANTICIPATED</span><canvas class="sprite" data-sprite="hexe"></canvas><h3>ASSASSIN'S CREED HEXE</h3><p>A new Creed. Hood: ready. Haystacks: located.</p><span class="badge tba">RUMORED 2027</span></div>
     </div>
+    <p class="lede">The wishlist. My calendar is already cleared.</p>
+    <div class="sec-head"><span class="sec-num win">07</span><h2 class="chrome">UP NEXT</h2></div>
   </div>
 </section>
 
 <section id="shame">
   <div class="wrap">
-    <div class="sec-head"><span class="sec-num win">06</span><h2 class="chrome">HALL OF SHAME</h2></div>
-    <p class="lede">Every legend has a few save files they'd rather delete.</p>
     <div class="grid2">
       <div class="win card ach shame"><canvas class="sprite" data-sprite="brokenSword"></canvas><div><h3>PARRY? NEVER HEARD OF HER</h3><p>Missed the same parry in Clair Obscur 40 times in a row. The 41st was an accident.</p><span class="rare">FAILED 40 TIMES</span></div></div>
       <div class="win card ach shame"><canvas class="sprite" data-sprite="skull"></canvas><div><h3>LEAP OF NO FAITH</h3><p>Jumped off the tallest tower in the game. Missed the haystack by one pixel.</p><span class="rare">0% OF ASSASSINS</span></div></div>
       <div class="win card ach shame"><canvas class="sprite" data-sprite="lostMap"></canvas><div><h3>MAP? WHAT MAP?</h3><p>Two hours lost in Crimson Desert looking for a quest marker. It was right behind me.</p><span class="rare">WRONG WAY</span></div></div>
       <div class="win card ach shame"><canvas class="sprite" data-sprite="pause"></canvas><div><h3>FORGOT TO PAUSE</h3><p>Put the controller down "for one second" in the middle of a boss fight. Came back to GAME OVER.</p><span class="rare">TOO COMMON</span></div></div>
     </div>
+    <p class="lede">Every legend has a few save files they'd rather delete.</p>
+    <div class="sec-head"><span class="sec-num win">06</span><h2 class="chrome">HALL OF SHAME</h2></div>
   </div>
 </section>
 
 <section id="games">
   <div class="wrap">
-    <div class="sec-head"><span class="sec-num win">05</span><h2 class="chrome">GAMES</h2></div>
-    <p class="lede">Ask me about any of these and I won't stop talking.</p>
     <div class="grid3">
       <div class="win card game"><canvas class="sprite" data-sprite="pyramid"></canvas><h3>CONTROL RESONANT</h3><p>Bending reality. Still can't bend my sleep schedule.</p><span class="badge live">NOW PLAYING</span></div>
       <div class="win card game"><canvas class="sprite" data-sprite="dawn"></canvas><h3>THE BLOOD OF DAWNWALKER</h3><p>Vampires, hard choices, zero daylight.</p><span class="badge gold">80+ HOURS</span></div>
@@ -484,13 +483,13 @@
         <span class="badge gold">1000+ HOURS</span>
       </div>
     </div>
+    <p class="lede">Ask me about any of these and I won't stop talking.</p>
+    <div class="sec-head"><span class="sec-num win">05</span><h2 class="chrome">GAMES</h2></div>
   </div>
 </section>
 
 <section id="platinum">
   <div class="wrap">
-    <div class="sec-head"><span class="sec-num win">04</span><h2 class="chrome">PLATINUM TROPHIES</h2></div>
-    <p class="lede">Every trophy in the game, collected. Not one skipped.</p>
     <div class="win plat-card" aria-label="19 platinum trophies earned">
       <canvas class="sprite" data-sprite="plat"></canvas>
       <div>
@@ -499,13 +498,13 @@
         <div class="plat-shelf" id="platShelf" aria-hidden="true"></div>
       </div>
     </div>
+    <p class="lede">Every trophy in the game, collected. Not one skipped.</p>
+    <div class="sec-head"><span class="sec-num win">04</span><h2 class="chrome">PLATINUM TROPHIES</h2></div>
   </div>
 </section>
 
 <section id="achievements">
   <div class="wrap">
-    <div class="sec-head"><span class="sec-num win">03</span><h2 class="chrome">ACHIEVEMENTS</h2></div>
-    <p class="lede">Some of these may be slightly exaggerated.</p>
     <div class="grid3">
       <div class="win card ach"><canvas class="sprite" data-sprite="haystack"></canvas><div><h3>LEAP OF FAITH</h3><p>Jumped off every tall tower in every Assassin's Creed. Always found the haystack.</p><span class="rare">0.1% OF PLAYERS</span></div></div>
       <div class="win card ach"><canvas class="sprite" data-sprite="moon"></canvas><div><h3>NIGHT OWL</h3><p>"Just one more save point" at 11pm. It's now 5am.</p><span class="rare">COMMON (FOR ZUK)</span></div></div>
@@ -514,26 +513,26 @@
       <div class="win card ach"><canvas class="sprite" data-sprite="scroll"></canvas><div><h3>SIDE QUEST ADDICT</h3><p>60 hours in. Main story: 12% complete.</p><span class="rare">LEGENDARY</span></div></div>
       <div class="win card ach"><canvas class="sprite" data-sprite="camera"></canvas><div><h3>PHOTO MODE PRO</h3><p>Spent longer framing the sunset than fighting the final boss.</p><span class="rare">0.5% OF PLAYERS</span></div></div>
     </div>
+    <p class="lede">Some of these may be slightly exaggerated.</p>
+    <div class="sec-head"><span class="sec-num win">03</span><h2 class="chrome">ACHIEVEMENTS</h2></div>
   </div>
 </section>
 
 <section id="about">
   <div class="wrap">
-    <div class="sec-head"><span class="sec-num win">02</span><h2 class="chrome">WHAT I'M ABOUT</h2></div>
-    <p class="lede">The things that make me, me.</p>
     <div class="grid2">
       <div class="win card ach about"><canvas class="sprite" data-sprite="book"></canvas><div><h3>STORIES FIRST</h3><p>Give me a good plot and a big world and I'm gone for the weekend.</p></div></div>
       <div class="win card ach about"><canvas class="sprite" data-sprite="star"></canvas><div><h3>ALWAYS JOKING</h3><p>If there's a joke to be found, I'll find it. Usually at the worst possible moment.</p></div></div>
       <div class="win card ach about"><canvas class="sprite" data-sprite="key"></canvas><div><h3>CURIOUS BY DEFAULT</h3><p>Every locked door, every hidden path. If it's there, I want to know what's behind it.</p></div></div>
       <div class="win card ach about"><canvas class="sprite" data-sprite="hourglass"></canvas><div><h3>AT MY OWN PACE</h3><p>No rush, no pressure. I take my time and enjoy the ride.</p></div></div>
     </div>
+    <p class="lede">The things that make me, me.</p>
+    <div class="sec-head"><span class="sec-num win">02</span><h2 class="chrome">WHAT I'M ABOUT</h2></div>
   </div>
 </section>
 
 <section id="profile">
   <div class="wrap">
-    <div class="sec-head"><span class="sec-num win">01</span><h2 class="chrome">PLAYER PROFILE</h2></div>
-    <p class="lede">The short version, for anyone meeting me for the first time.</p>
     <div class="profile">
       <div class="win card">
         <div class="divider">SKILL TREE</div>
@@ -655,6 +654,8 @@
         </div>
       </div>
     </div>
+    <p class="lede">The short version, for anyone meeting me for the first time.</p>
+    <div class="sec-head"><span class="sec-num win">01</span><h2 class="chrome">PLAYER PROFILE</h2></div>
   </div>
 </section>
 
@@ -1765,6 +1766,21 @@
     const dark = document.createElement("canvas"), dctx = dark.getContext("2d");
     let darkImg = null, lightUp = 0; // lightUp: 0 = dark, 1 = the lights come on (after reaching the top)
     const navEl = document.querySelector("nav");
+    // the barrels, rolling (drawn above the darkness)
+    function drawBarrels() {
+      const sy = scrollY;
+      for (const b of barrels) {
+        const ly = barrelLines[b.line];
+        if (ly === undefined) continue;
+        const by = ly - BW + b.yOff - sy;
+        if (by < -BW || by > innerHeight + BW) continue;
+        ctx.save();
+        ctx.translate(Math.round(b.x + BW / 2), Math.round(by + BW / 2));
+        ctx.rotate(Math.round(b.rot / (Math.PI / 4)) * (Math.PI / 4)); // 8 steps keeps it pixel-crisp
+        drawRows(BARREL, PAL, -BW / 2, -BW / 2, BS);
+        ctx.restore();
+      }
+    }
     function drawDarkness(hx, hy) {
       if (lightUp >= 1) return; // lights fully on: the whole page is visible
       const top = Math.round(navEl.getBoundingClientRect().bottom); // the top bar stays lit
@@ -1819,14 +1835,15 @@
     const keys = { left: false, right: false, down: false, jump: false, pressed: false };
     let p = null, plats = [], movers = [], solids = [], textLines = [], btn = null, footer = null;
     let won = false, warped = false, frameNo = 0, startTime = 0, lookUntil = 0;
-    // Barrels roll along the section lines near you, from one screen edge, and fall away through
-    // the gaps. One that hits you knocks you down below that line.
+    // Barrels roll along the section lines near you, from one screen edge to the other, hopping
+    // over the gaps. They're drawn above the darkness so you can see them coming. One that hits
+    // you knocks you down below that line.
     const BARREL = [
       "....XXXX....", "..XXeeeeXX..", ".XeeEeeEeeX.", ".XeeEeeEeeX.", "XeeeEeeEeeeX", "XEEEEEEEEEEX",
       "XeeeEeeEeeeX", "XeeeEeeEeeeX", ".XeeEeeEeeX.", ".XeeEeeEeeX.", "..XXeeeeXX..", "....XXXX...."
     ];
-    const BS = 2, BW = 12 * BS;   // barrel size on screen
-    let barrels = [], barrelNext = [];
+    const BS = 3, BW = 12 * BS, HOP_H = 40;   // barrel size on screen, how high it hops over a gap
+    let barrels = [], barrelNext = [], barrelLines = [];
     let lastAct = Math.random() < 0.5 ? "nose" : "belly"; // idle animations take turns, so neither repeats
     const controlsHint = () => hasMouse.matches ? "← → RUN · ↓ DROP · SPACE JUMP ×2" : "◀ ▶ RUN · ▼ DROP · JUMP ×2";
 
@@ -1984,8 +2001,8 @@
     }
     // Fast travel: the nav links drop the hero in at the top of that section
     function warpTo(el) {
-      const r = el.getBoundingClientRect(), sy = scrollY;
-      p.x = innerWidth / 2 - W / 2; p.y = r.top + sy + 8;
+      const head = el.querySelector(".sec-head") || el, r = head.getBoundingClientRect(), sy = scrollY;
+      p.x = r.left + 4; p.y = r.top + sy - H - 6; // lands on the section's title, where the section starts
       p.vx = 0; p.vy = 0; p.ground = null; p.spin = false; p.intro = false; p.idle = 0;
       warped = true; lookUntil = 0;
       scrollTo(0, p.y + H / 2 - innerHeight * 0.55);
@@ -2182,7 +2199,7 @@
           if (barrelNext[i] === undefined) barrelNext[i] = nowMs + 1500 + Math.random() * 2500;
           if (nowMs < barrelNext[i] || barrels.some(b => b.line === i)) return;
           const d = Math.random() < 0.5 ? 1 : -1;
-          barrels.push({ line: i, x: d > 0 ? -BW : innerWidth, dir: d, speed: 2.4 + Math.random(), rot: 0, drop: 0, vy: 0 });
+          barrels.push({ line: i, x: d > 0 ? -BW : innerWidth, dir: d, speed: 2.4 + Math.random(), rot: 0, yOff: 0, vy: 0 });
           barrelNext[i] = Infinity; // the next one is scheduled when this one is gone
         });
       }
@@ -2191,18 +2208,24 @@
         const ly = lines[b.line];
         if (ly === undefined) return false;
         b.x += b.dir * b.speed; b.rot += (b.dir * b.speed) / (BW / 2);
-        const cx = b.x + BW / 2;
-        if (!b.drop && !(lineSegs[b.line] || []).some(sg => cx >= sg.x1 && cx <= sg.x2)) b.drop = 0.01; // over a gap: it falls
-        if (b.drop) { b.vy += 0.5; b.drop += b.vy; }
-        const top = ly - BW + b.drop;
-        // a rolling barrel that touches you knocks you down below its line
-        if (!b.drop && !won && !p.intro && p.hurt <= 0 &&
+        const segs = lineSegs[b.line] || [], cx = b.x + BW / 2;
+        // reaching a gap: hop across it to the next piece of line
+        if (b.yOff === 0 && b.vy === 0 && !segs.some(sg => cx >= sg.x1 && cx <= sg.x2)) {
+          const next = b.dir > 0 ? Math.min(...segs.filter(sg => sg.x1 > cx).map(sg => sg.x1))
+                                 : Math.max(...segs.filter(sg => sg.x2 < cx).map(sg => sg.x2));
+          const frames = isFinite(next) ? (Math.abs(next - cx) + BW) / b.speed : 30;
+          b.g = 8 * HOP_H / (frames * frames); b.vy = -b.g * frames / 2; // a low hop, about HOP_H high
+        }
+        if (b.vy || b.yOff < 0) { b.vy += b.g; b.yOff += b.vy; if (b.yOff >= 0) { b.yOff = 0; b.vy = 0; } }
+        const top = ly - BW + b.yOff;
+        // a barrel that touches you knocks you down below its line
+        if (!won && !p.intro && p.hurt <= 0 &&
             b.x < p.x + W - INSET && b.x + BW > p.x + INSET && top < p.y + H && top + BW > p.y + 4) {
           p.y = ly + 3; p.ground = null; p.vy = 2; p.vx = b.dir * 4;
           p.spin = true; p.rot = 0; p.doubleUsed = true; p.hurt = 70;
           puff(p.x + W / 2, ly - sy, 14);
         }
-        const gone = b.x < -BW * 2 || b.x > innerWidth + BW || b.drop > innerHeight;
+        const gone = b.x < -BW * 2 || b.x > innerWidth + BW;
         if (gone) barrelNext[b.line] = nowMs + 2000 + Math.random() * 4000;
         return !gone;
       });
@@ -2227,16 +2250,7 @@
       const cs = getComputedStyle(document.body);
       const c = { edge: cs.getPropertyValue("--win-edge").trim() };
       lines.forEach((y, i) => drawLine(i, y, sy2, c));
-      // the barrels, rolling
-      for (const b of barrels) {
-        const by = lines[b.line] - BW + b.drop - sy2;
-        if (by < -BW || by > innerHeight + BW) continue;
-        ctx.save();
-        ctx.translate(Math.round(b.x + BW / 2), Math.round(by + BW / 2));
-        ctx.rotate(Math.round(b.rot / (Math.PI / 4)) * (Math.PI / 4)); // 8 steps keeps it pixel-crisp
-        drawRows(BARREL, PAL, -BW / 2, -BW / 2, BS);
-        ctx.restore();
-      }
+      barrelLines = lines; // the barrels are drawn after the darkness (see drawBarrels)
 
       // the hero
       const vx = Math.round(p.x), vy = Math.round(p.y - sy2);
@@ -2295,6 +2309,7 @@
       frame();
       lightUp = won ? Math.min(1, lightUp + 0.012) : Math.max(0, lightUp - 0.05);
       drawDarkness(heroX, heroY);
+      drawBarrels();
       particles = particles.filter(p => p.life > 0);
       if (particles.length > 2000) particles.splice(0, particles.length - 2000);
       for (const p of particles) {
