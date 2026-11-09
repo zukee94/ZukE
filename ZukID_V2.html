@@ -1671,6 +1671,7 @@
     let darkImg = null, lightUp = 0; // lightUp: 0 = dark, 1 = the lights come on (after reaching the top)
     const navEl = document.querySelector("nav");
     function drawDarkness(hx, hy) {
+      if (lightUp >= 1) return; // lights fully on: the whole page is visible
       const top = Math.round(navEl.getBoundingClientRect().bottom); // the top bar stays lit
       const w = Math.ceil(innerWidth / DARK_PX), h = Math.ceil((innerHeight - top) / DARK_PX);
       if (w <= 0 || h <= 0) return;
@@ -1680,13 +1681,15 @@
       const halo = Math.min(240, Math.max(150, innerWidth * 0.42));
       const R = (halo + lightUp * Math.hypot(innerWidth, innerHeight)) * flicker / DARK_PX, core = R * 0.4;
       const cx = hx / DARK_PX, cy = (hy - top) / DARK_PX;
+      // as the lights come on, the halo spreads out and the darkness fades everywhere
+      const darkness = DARKNESS * (1 - lightUp);
       for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
         const dist = Math.hypot(x + 0.5 - cx, y + 0.5 - cy);
-        let a = DARKNESS;
+        let a = darkness;
         if (dist < R) {
           // stepped bands with an ordered dither at each edge, like the hero's sunset
           const v = Math.max(0, (dist - core) / (R - core)) * BANDS + (BAYER[y & 3][x & 3] / 16 - 0.5);
-          a = Math.max(0, Math.min(BANDS, Math.floor(v))) / BANDS * DARKNESS;
+          a = Math.max(0, Math.min(BANDS, Math.floor(v))) / BANDS * darkness;
         }
         const i = (y * w + x) * 4;
         d[i] = 3; d[i + 1] = 2; d[i + 2] = 14; d[i + 3] = a * 255;
@@ -1824,9 +1827,17 @@
         try { best = +localStorage.getItem("zukClimbBest") || null; if (!best || time < best) { best = time; localStorage.setItem("zukClimbBest", String(Math.round(time))); } } catch (e) { best = time; }
       }
       fanfare();
+      // lights on: a quick flash, then the darkness fades away from the whole page (see drawDarkness)
+      const flash = document.createElement("div");
+      flash.className = "flash";
+      document.body.appendChild(flash);
+      setTimeout(() => flash.remove(), 500);
+      // let go of the camera so the whole lit page can be scrolled; moving the hero takes it back
+      lookUntil = Infinity;
+      const look = hasMouse.matches ? "SCROLL TO SEE IT ALL" : "SWIPE TO SEE IT ALL";
       extraEl.innerHTML = warped
-        ? `TOP REACHED! (FAST TRAVEL, NO RECORD)<br>PRESS START TO CLIMB AGAIN`
-        : `TOP REACHED! LIGHTS ON.<br>TIME <b>${clock(time)}</b> · BEST <b>${clock(best)}</b><br>PRESS START TO CLIMB AGAIN`;
+        ? `TOP REACHED! LIGHTS ON.<br>(FAST TRAVEL, NO RECORD)<br>${look}<br>PRESS START TO CLIMB AGAIN`
+        : `TOP REACHED! LIGHTS ON.<br>TIME <b>${clock(time)}</b> · BEST <b>${clock(best)}</b><br>${look}<br>PRESS START TO CLIMB AGAIN`;
       toast(`Top reached in ${clock(time)}`, "YOU MADE IT!");
       const cx = p.x + W / 2, cy = p.y - scrollY;
       const cols = ["#ff4a5e", "#ffd34d", "#2fe08a", "#4fb8ff", "#ff7ad9", "#ffffff"];
@@ -1863,7 +1874,8 @@
       addEventListener("keydown", e => onKey(e, true), true);
       addEventListener("keyup", e => onKey(e, false), true);
       // scrolling by hand (wheel or finger) lets you look around for a moment
-      const look = () => { lookUntil = performance.now() + LOOK_MS; };
+      // (after reaching the top the camera stays free until the hero moves again)
+      const look = () => { if (lookUntil !== Infinity) lookUntil = performance.now() + LOOK_MS; };
       addEventListener("wheel", look, { passive: true });
       addEventListener("touchmove", e => { if (!e.target.closest(".pad")) look(); }, { passive: true });
 
