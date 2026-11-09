@@ -86,12 +86,13 @@
     nav a { font-size: 9px; }
   }
 
+  /* sized to its content, with PRESS START close to the floor so one jump reaches it */
   header.hero {
-    min-height: 90vh; display: grid; place-items: center; text-align: center;
+    display: grid; place-items: center; text-align: center;
     position: relative; overflow: hidden; background: #2a1460;
   }
   #scene { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
-  .hero-inner { position: relative; z-index: 2; padding: 40px 0 140px; }
+  .hero-inner { position: relative; z-index: 2; padding: 40px 0 30px; }
   .tag { color: var(--teal); font-size: 11px; line-height: 1.8; margin-bottom: 28px; text-shadow: 2px 2px 0 var(--shadow); }
   h1.name {
     font-size: clamp(64px, 18vw, 160px); line-height: 1;
@@ -676,9 +677,10 @@
     A: "#dfe9f8", Q: "#a9bcd9", Z: "#6f82a8", J: "#140f3c", K: "#3a2a8a", L: "#6a8cff",
     U: "#1b3fa8", O: "#2f6fe0", V: "#5aa6ff", I: "#a8dcff", H: "#f0faff",
     N: "#2fe08a", M: "#1fa86a",
-    // Up Next icons: Vice City pinks and violets, sunset orange, Witcher teal, Lara's dark hair
+    // Up Next icons: Vice City pinks and violets, sunset orange, Witcher teal, Lara's dark hair, Hexe sticks
     p: "#ff5fc8", P: "#c42aa8", v: "#6a5cff", u: "#3d1466", F: "#ffb347",
-    t: "#9ff0ea", T: "#3fa6ad", a: "#5a3418"
+    t: "#9ff0ea", T: "#3fa6ad", a: "#5a3418",
+    S: "#c9ad86", C: "#86694e"
   };
   const OUTLINE = [20, 16, 31];
 
@@ -1269,11 +1271,27 @@
       "..........oYo.........",
       "...........o.........."
     ],
-    // Assassin's Creed Hexe: the same hooded assassin in witch colors, with a bent witch-hat tip
+    // Assassin's Creed Hexe: the Creed sigil tied from sticks, like a witch's totem
     hexe() {
-      const tip = ["...........WW...", ".........WWwW...", "......WWwwwW....", "....WWwwwwwW...."];
-      const swap = { w: "K", W: "L", G: "h", g: "h", y: "N" };
-      return [...tip, ...SPRITES.hood.slice(4)].map(r => [...r].map(ch => swap[ch] || ch).join(""));
+      const W = 20, H = 22, g = Array.from({ length: H }, () => Array(W).fill("."));
+      const line = (x0, y0, x1, y1, ch) => {
+        const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
+        for (let i = 0; i <= n; i++) {
+          const x = Math.round(x0 + (x1 - x0) * i / n), y = Math.round(y0 + (y1 - y0) * i / n);
+          if (x >= 0 && y >= 0 && x < W && y < H) g[y][x] = ch;
+        }
+      };
+      // the two legs: two sticks each, bowing out a little toward the bottom
+      line(10, 1, 5, 11, "S"); line(5, 11, 3, 17, "S"); line(11, 2, 6, 12, "C"); line(6, 12, 4, 16, "C");
+      line(10, 1, 15, 11, "S"); line(15, 11, 17, 17, "S"); line(9, 2, 14, 12, "C"); line(14, 12, 16, 16, "C");
+      // the feet hook in toward the middle, leaving the gap at the bottom of the sigil
+      line(3, 17, 4, 19, "S"); line(4, 19, 6, 20, "S"); line(6, 20, 9, 20, "S"); line(5, 18, 8, 19, "C");
+      line(17, 17, 16, 19, "S"); line(16, 19, 13, 20, "S"); line(15, 18, 13, 19, "C");
+      // stray sticks: crossed at the peak and poking out at the feet
+      line(8, 0, 12, 4, "S"); line(13, 0, 9, 4, "C");
+      line(1, 14, 3, 18, "C"); line(0, 20, 3, 19, "S"); line(7, 21, 9, 19, "C");
+      line(19, 14, 17, 18, "C"); line(19, 20, 17, 19, "S"); line(11, 21, 12, 19, "C");
+      return g.map(r => r.join(""));
     },
     // Clair Obscur: Expedition 33: the Paintress's monolith with its painted number, falling petals
     monolith: [
@@ -1852,7 +1870,8 @@
       const r = btn.getBoundingClientRect();
       const x = r.left + r.width / 2 - W / 2;
       const dir = Math.random() < 0.5 ? -1 : 1;
-      p = { x, y: r.top + scrollY + r.height / 2 - H / 2, vx: dir * (1.5 + Math.random() * 2), vy: -11,
+      // leaps out far enough to land beside the button, not under it
+      p = { x, y: r.top + scrollY + r.height / 2 - H / 2, vx: dir * (r.width / 2 + W) / 34, vy: -11,
             ground: null, groundX: 0, coyote: 0, buffer: 0, face: dir, spin: true, rot: 0, doubleUsed: true, intro: true, idle: 0,
             act: null, actT: 0, actLen: 0, nextAct: between(IDLE_FIRST) };
       puff(r.left + r.width / 2, r.top + r.height / 2, 14);
