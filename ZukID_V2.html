@@ -86,13 +86,14 @@
     nav a { font-size: 9px; }
   }
 
-  /* sized to its content, with PRESS START close to the floor so one jump reaches it */
+  /* sized to its content, with PRESS START about 140px above the floor: out of reach of a single
+     jump (~95px) but reachable with a standing double jump (up to ~170px) */
   header.hero {
     display: grid; place-items: center; text-align: center;
     position: relative; overflow: hidden; background: #2a1460;
   }
   #scene { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
-  .hero-inner { position: relative; z-index: 2; padding: 40px 0 30px; }
+  .hero-inner { position: relative; z-index: 2; padding: 40px 0 90px; }
   .tag { color: var(--teal); font-size: 11px; line-height: 1.8; margin-bottom: 28px; text-shadow: 2px 2px 0 var(--shadow); }
   h1.name {
     font-size: clamp(64px, 18vw, 160px); line-height: 1;
@@ -1743,6 +1744,7 @@
     const keys = { left: false, right: false, jump: false, pressed: false };
     let p = null, plats = [], movers = [], solids = [], textLines = [], btn = null, footer = null;
     let won = false, warped = false, frameNo = 0, startTime = 0, lookUntil = 0;
+    let lastAct = Math.random() < 0.5 ? "nose" : "belly"; // idle animations take turns, so neither repeats
     const controlsHint = () => hasMouse.matches ? "← → RUN · SPACE JUMP ×2" : "◀ ▶ RUN · JUMP ×2";
 
     function onKey(e, isDown) {
@@ -2061,11 +2063,11 @@
         }
       }
 
-      // standing still starts a random idle animation: picking the nose or the belly button
+      // standing still starts an idle animation, alternating between picking the nose and the belly button
       const still = p.ground && !keys.left && !keys.right && Math.abs(p.vx) < 0.3;
       p.idle = still ? p.idle + 1 : 0;
       if (!p.idle) { p.act = null; p.nextAct = between(IDLE_FIRST); }
-      else if (!p.act && p.idle >= p.nextAct) { p.act = Math.random() < 0.5 ? "nose" : "belly"; p.actT = 0; p.actLen = 180 + Math.random() * 180; }
+      else if (!p.act && p.idle >= p.nextAct) { p.act = lastAct = lastAct === "nose" ? "belly" : "nose"; p.actT = 0; p.actLen = 180 + Math.random() * 180; }
       if (p.act && ++p.actT > p.actLen) { p.act = null; p.nextAct = p.idle + between(IDLE_GAP); }
 
       // reached the footer at the top? (fully above the line under it)
