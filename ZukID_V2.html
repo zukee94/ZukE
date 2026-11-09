@@ -205,6 +205,7 @@
   .shame .rare { color: #ff4a5e; }
   /* Up Next: text-only cards, badge pinned to the bottom */
   .wish { display: flex; flex-direction: column; align-items: flex-start; }
+  .wish canvas { width: 72px; height: 72px; margin-bottom: 14px; }
   .wish h3 { font-size: 11px; line-height: 1.6; color: var(--gold); margin-bottom: 10px; }
   .wish p { font-size: 22px; flex: 1; }
 
@@ -423,11 +424,11 @@
     <p class="lede">The wishlist. My calendar is already cleared.</p>
     <div class="grid3">
       <div class="win card wish"><h3>THE WITCHER 4</h3><p>Monster contracts, hard choices, and another 100 hours I don't have.</p><span class="badge">WAITING</span></div>
-      <div class="win card wish"><h3>GOD OF WAR LAUFEY</h3><p>More Norse family drama. Count me in.</p><span class="badge">WAITING</span></div>
+      <div class="win card wish"><canvas class="sprite" data-sprite="axeLaufey"></canvas><h3>GOD OF WAR LAUFEY</h3><p>More Norse family drama. Count me in.</p><span class="badge">WAITING</span></div>
       <div class="win card wish"><h3>TOMB RAIDER: LEGACY OF ATLANTIS</h3><p>Ancient ruins, deadly traps, zero health and safety inspections.</p><span class="badge">WAITING</span></div>
       <div class="win card wish"><h3>PHANTOM BLADE ZERO</h3><p>Fast swords, faster deaths. Mostly mine.</p><span class="badge">WAITING</span></div>
       <div class="win card wish"><h3>GTA VI</h3><p>Waited this long. What's a little longer?</p><span class="badge">WAITING</span></div>
-      <div class="win card wish"><h3>ASSASSIN'S CREED HEXE</h3><p>A new Creed. Hood: ready. Haystacks: located.</p><span class="badge gold">MOST WANTED</span></div>
+      <div class="win card wish"><canvas class="sprite" data-sprite="hexe"></canvas><h3>ASSASSIN'S CREED HEXE</h3><p>A new Creed. Hood: ready. Haystacks: located.</p><span class="badge gold">MOST WANTED</span></div>
     </div>
   </div>
 </section>
@@ -1106,7 +1107,8 @@
       return g.map(row => row.join(""));
     },
     // God of War Ragnarok: the Leviathan Axe with frost edge and runes
-    axe() {
+    // rune and spark colors can be swapped for variants (see axeLaufey)
+    axe(rune = "B", spark = "b") {
       const rows = [], A = [4, 22], B = [18, 3.5];
       const len = Math.hypot(B[0] - A[0], B[1] - A[1]), ux = (B[0] - A[0]) / len, uy = (B[1] - A[1]) / len;
       const px = uy, py = -ux, H = [15, 7.5];
@@ -1120,15 +1122,23 @@
           const vx = x - H[0], vy = y - H[1], out = vx * px + vy * py, side = vx * ux + vy * uy;
           if (out > 0.6 && out < 8.2 && Math.abs(side) < 2 + out * 0.55) {
             ch = out > 7.2 ? "b" : out > 6 ? "w" : out > 3 ? "W" : "g";
-            if (out > 3.4 && out < 5.4 && Math.abs(side) < 2.4 && (x + y) % 2 === 0) ch = "B";
+            if (out > 3.4 && out < 5.4 && Math.abs(side) < 2.4 && (x + y) % 2 === 0) ch = rune;
           }
           if (Math.hypot(x - A[0], y - A[1]) < 1.6) ch = "G";
-          if (frost.includes(x + "," + y)) ch = "b";
+          if (frost.includes(x + "," + y)) ch = spark;
           row += ch;
         }
         rows.push(row);
       }
       return rows;
+    },
+    // God of War Laufey: the same Leviathan Axe, with green giant runes and sparks instead of frost
+    axeLaufey() { return SPRITES.axe("N", "N"); },
+    // Assassin's Creed Hexe: the same hooded assassin in witch colors, with a bent witch-hat tip
+    hexe() {
+      const tip = ["...........WW...", ".........WWwW...", "......WWwwwW....", "....WWwwwwwW...."];
+      const swap = { w: "K", W: "L", G: "h", g: "h", y: "N" };
+      return [...tip, ...SPRITES.hood.slice(4)].map(r => [...r].map(ch => swap[ch] || ch).join(""));
     },
     // Clair Obscur: Expedition 33: the Paintress's monolith with its painted number, falling petals
     monolith: [
