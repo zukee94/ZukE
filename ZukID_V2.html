@@ -423,11 +423,11 @@
     <div class="sec-head"><span class="sec-num win">07</span><h2 class="chrome">UP NEXT</h2></div>
     <p class="lede">The wishlist. My calendar is already cleared.</p>
     <div class="grid3">
-      <div class="win card wish"><h3>THE WITCHER 4</h3><p>Monster contracts, hard choices, and another 100 hours I don't have.</p><span class="badge">WAITING</span></div>
-      <div class="win card wish"><canvas class="sprite" data-sprite="axeLaufey"></canvas><h3>GOD OF WAR LAUFEY</h3><p>More Norse family drama. Count me in.</p><span class="badge">WAITING</span></div>
-      <div class="win card wish"><h3>TOMB RAIDER: LEGACY OF ATLANTIS</h3><p>Ancient ruins, deadly traps, zero health and safety inspections.</p><span class="badge">WAITING</span></div>
-      <div class="win card wish"><h3>PHANTOM BLADE ZERO</h3><p>Fast swords, faster deaths. Mostly mine.</p><span class="badge">WAITING</span></div>
-      <div class="win card wish"><h3>GTA VI</h3><p>Waited this long. What's a little longer?</p><span class="badge">WAITING</span></div>
+      <div class="win card wish"><canvas class="sprite" data-sprite="witcher4"></canvas><h3>THE WITCHER 4</h3><p>Monster contracts, hard choices, and another 100 hours I don't have.</p><span class="badge">WAITING</span></div>
+      <div class="win card wish"><canvas class="sprite" data-sprite="laufey"></canvas><h3>GOD OF WAR LAUFEY</h3><p>More Norse family drama. Count me in.</p><span class="badge">WAITING</span></div>
+      <div class="win card wish"><canvas class="sprite" data-sprite="tombRaider"></canvas><h3>TOMB RAIDER: LEGACY OF ATLANTIS</h3><p>Ancient ruins, deadly traps, zero health and safety inspections.</p><span class="badge">WAITING</span></div>
+      <div class="win card wish"><canvas class="sprite" data-sprite="phantomBlade"></canvas><h3>PHANTOM BLADE ZERO</h3><p>Fast swords, faster deaths. Mostly mine.</p><span class="badge">WAITING</span></div>
+      <div class="win card wish"><canvas class="sprite" data-sprite="gta6"></canvas><h3>GTA VI</h3><p>Waited this long. What's a little longer?</p><span class="badge">WAITING</span></div>
       <div class="win card wish"><canvas class="sprite" data-sprite="hexe"></canvas><h3>ASSASSIN'S CREED HEXE</h3><p>A new Creed. Hood: ready. Haystacks: located.</p><span class="badge gold">MOST WANTED</span></div>
     </div>
   </div>
@@ -675,7 +675,10 @@
     d: "#e8b46a", D: "#b97a3a", X: "#2a2a3a", x: "#07070d", h: "#2a2f5a",
     A: "#dfe9f8", Q: "#a9bcd9", Z: "#6f82a8", J: "#140f3c", K: "#3a2a8a", L: "#6a8cff",
     U: "#1b3fa8", O: "#2f6fe0", V: "#5aa6ff", I: "#a8dcff", H: "#f0faff",
-    N: "#2fe08a", M: "#1fa86a"
+    N: "#2fe08a", M: "#1fa86a",
+    // Up Next icons: Vice City pinks and violets, sunset orange, Witcher teal, Lara's dark hair
+    p: "#ff5fc8", P: "#c42aa8", v: "#6a5cff", u: "#3d1466", F: "#ffb347",
+    t: "#9ff0ea", T: "#3fa6ad", a: "#5a3418"
   };
   const OUTLINE = [20, 16, 31];
 
@@ -1107,8 +1110,7 @@
       return g.map(row => row.join(""));
     },
     // God of War Ragnarok: the Leviathan Axe with frost edge and runes
-    // rune and spark colors can be swapped for variants (see axeLaufey)
-    axe(rune = "B", spark = "b") {
+    axe() {
       const rows = [], A = [4, 22], B = [18, 3.5];
       const len = Math.hypot(B[0] - A[0], B[1] - A[1]), ux = (B[0] - A[0]) / len, uy = (B[1] - A[1]) / len;
       const px = uy, py = -ux, H = [15, 7.5];
@@ -1122,18 +1124,151 @@
           const vx = x - H[0], vy = y - H[1], out = vx * px + vy * py, side = vx * ux + vy * uy;
           if (out > 0.6 && out < 8.2 && Math.abs(side) < 2 + out * 0.55) {
             ch = out > 7.2 ? "b" : out > 6 ? "w" : out > 3 ? "W" : "g";
-            if (out > 3.4 && out < 5.4 && Math.abs(side) < 2.4 && (x + y) % 2 === 0) ch = rune;
+            if (out > 3.4 && out < 5.4 && Math.abs(side) < 2.4 && (x + y) % 2 === 0) ch = "B";
           }
           if (Math.hypot(x - A[0], y - A[1]) < 1.6) ch = "G";
-          if (frost.includes(x + "," + y)) ch = spark;
+          if (frost.includes(x + "," + y)) ch = "b";
           row += ch;
         }
         rows.push(row);
       }
       return rows;
     },
-    // God of War Laufey: the same Leviathan Axe, with green giant runes and sparks instead of frost
-    axeLaufey() { return SPRITES.axe("N", "N"); },
+    // ---- Up Next icons ----
+    // The Witcher 4: chrome "IV" with blade-sharp ends, silver on top fading to teal
+    witcher4() {
+      const W = 22, H = 18, rows = [];
+      const grad = "HHHAAAAQQQQZZtttTT";
+      for (let y = 0; y < H; y++) {
+        let row = "";
+        for (let x = 0; x < W; x++) {
+          let on = false;
+          // I: a stem with pointed serifs top and bottom
+          if (x >= 3 && x <= 5 && y >= 1 && y <= 16) on = true;
+          if (y === 1 && x >= 1 && x <= 7) on = true;
+          if (y === 0 && (x === 1 || x === 7)) on = true;            // serif spikes
+          if (y === 16 && x >= 1 && x <= 7) on = true;
+          if (y === 17 && (x === 1 || x === 7)) on = true;
+          // V: two blade arms meeting in a point
+          const t = y / 16, lx = 9 + t * 5.4, rx = 20 - t * 5.4;
+          if (y >= 1 && y <= 15 && ((x >= lx - 1.5 && x <= lx + 1.2) || (x >= rx - 1.2 && x <= rx + 1.5))) on = true;
+          if (y === 16 && x >= 14 && x <= 15) on = true;
+          if (y === 17 && x === 14) on = true;                          // the V's sharp tip
+          if (y === 0 && (x === 8 || x === 21)) on = true;            // claw tips on the V
+          if (y === 1 && x >= 8 && x <= 11) on = true;
+          if (y === 1 && x >= 18 && x <= 21) on = true;
+          row += on ? grad[y] : ".";
+        }
+        rows.push(row);
+      }
+      return rows;
+    },
+
+    // Tomb Raider: the original Lara, with round sunglasses, a long braid and a teal tank top
+    tombRaider: [
+      "......aaaaa.......",
+      "....aaEEEEEaa.....",
+      "...aEEeeeeeEEa....",
+      "..aEeeeeeeeeeEa...",
+      "..aEeEsssssEeEa...",
+      "..aEEssssssssEa...",
+      "..aEkkksskkksEa...",
+      "..aEkwkkskwkksa...",
+      "..aEskksssskksaa..",
+      "...asssssssssa.aa.",
+      "....ssssRRsssa..a.",
+      ".....sssssss.....a",
+      "......sssss.....aa",
+      "...ttTsssssTtt..a.",
+      "..ttttTsssTtttt.a.",
+      ".ttttttttttttttta.",
+      ".tTttttttttttttTt.",
+      ".ttttttttttttttt.."
+    ],
+
+    // Phantom Blade Zero: a white zero cut through by a long blade-like slash
+    phantomBlade() {
+      // the zero: a clean two-pixel ring, lit on the left, shaded on the right
+      const ring = [
+        "................",
+        "................",
+        ".....wwwwww.....",
+        "....wwwwwwww....",
+        "...ww......gg...",
+        "..ww........gg..",
+        "..ww........gg..",
+        "..ww........gg..",
+        "..ww........gg..",
+        "..ww........gg..",
+        "..ww........gg..",
+        "..ww........gg..",
+        "..ww........gg..",
+        "...ww......gg...",
+        "....wwwwwwgg....",
+        ".....wwwwgg.....",
+        "................",
+        "................"
+      ].map(r => [...r]);
+      // the slash: one thin blade stroke from bottom left to top right, past the ring
+      for (let y = 0; y < 18; y++) {
+        const x = Math.round(14 - (13 * y) / 17);
+        ring[y][x] = y === 0 ? "r" : y <= 2 ? "W" : "w";       // a red glint on the tip
+      }
+      return ring.map(r => r.join(""));
+    },
+
+    // GTA VI: "VI" filled with a Vice City sunset, deep purple outline and a gold top edge
+    gta6() {
+      const W = 22, H = 18;
+      const grad = "YvvvvPPPPppppFFFyy";
+      // V: two thick arms that meet in a sharp point at the bottom
+      const inV = (x, y) => {
+        if (y < 1 || y > 16) return false;
+        const t = (y - 1) / 15, l = 0.3 + t * 7.2, r = 14.7 - t * 7.2, X = x + 0.5, mid = 7.5;
+        return (X >= l && X <= Math.min(l + 3.4, mid + 0.6)) || (X <= r && X >= Math.max(r - 3.4, mid - 0.6));
+      };
+      const inI = (x, y) => y >= 1 && y <= 16 && x >= 16 && x <= 20;
+      const mask = (x, y) => inV(x, y) || inI(x, y);
+      const rows = [];
+      for (let y = 0; y < H; y++) {
+        let row = "";
+        for (let x = 0; x < W; x++) {
+          let ch = ".";
+          if (mask(x, y)) {
+            // sunset fill with a gold top edge and a purple rim down the sides (the dark outline is automatic)
+            const edge = !mask(x - 1, y) || !mask(x + 1, y);
+            ch = y === 1 ? "Y" : edge && y < 10 ? "u" : grad[y];
+            // a faint palm frond inside the I
+            if (!edge && ((x === 18 && y >= 6 && y <= 12) || (y === 5 && x >= 17 && x <= 19) || (y === 6 && (x === 17 || x === 19)))) ch = "P";
+          }
+          row += ch;
+        }
+        rows.push(row);
+      }
+      return rows;
+    },
+
+    // God of War Laufey: the gold raven emblem, wings raised, braided body and a blue gem
+    laufey: [
+      "..y................y..",
+      ".yY.y............y.Yy.",
+      ".yYyY.y........y.YyYy.",
+      ".yYYYyY.y....y.YyYYYy.",
+      "..yYYYYyY....YyYYYYy..",
+      "..yYYYYYYy..yYYYYYYy..",
+      "...yYYYYYYyyyyYYYYy...",
+      "...oyYYYYyDYYYyYYYo...",
+      "....oyYYyDkDYYYyYo....",
+      ".....oyyYYDYYDDYyo....",
+      "......oYYYYYYDDYo.....",
+      ".......oYDYYDYYo......",
+      "........YYDDYYo.......",
+      "........oYDYDYo.......",
+      ".........YYbBYo.......",
+      ".........oYBBo........",
+      "..........oYo.........",
+      "...........o.........."
+    ],
     // Assassin's Creed Hexe: the same hooded assassin in witch colors, with a bent witch-hat tip
     hexe() {
       const tip = ["...........WW...", ".........WWwW...", "......WWwwwW....", "....WWwwwwwW...."];
