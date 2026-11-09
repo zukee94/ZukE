@@ -1525,6 +1525,50 @@
     } catch (e) { /* no audio available */ }
   }
 
+  // Original "level complete" jingle for reaching the top: a light-switch clunk as the lights
+  // come on, a quick rising arpeggio, two chord stabs, then a held chord that shimmers and fades,
+  // with a triangle-wave bass underneath
+  function victoryJingle() {
+    try {
+      const ac = new (window.AudioContext || window.webkitAudioContext)();
+      const t0 = ac.currentTime + 0.03;
+      const note = (type, freq, at, dur, vol, vibrato = 0) => {
+        const o = ac.createOscillator(), g = ac.createGain(), start = t0 + at;
+        o.type = type; o.frequency.setValueAtTime(freq, start);
+        if (vibrato) {
+          const lfo = ac.createOscillator(), depth = ac.createGain();
+          lfo.frequency.value = 7; depth.gain.value = freq * vibrato;
+          lfo.connect(depth); depth.connect(o.frequency);
+          lfo.start(start); lfo.stop(start + dur + 0.05);
+        }
+        g.gain.setValueAtTime(vol, start);
+        g.gain.setValueAtTime(vol, start + dur * 0.7);
+        g.gain.linearRampToValueAtTime(0, start + dur);
+        o.connect(g); g.connect(ac.destination);
+        o.start(start); o.stop(start + dur + 0.02);
+      };
+      // the clunk: a short burst of noise and a thump dropping in pitch
+      const len = Math.floor(ac.sampleRate * 0.05), buf = ac.createBuffer(1, len, ac.sampleRate), data = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+      const noise = ac.createBufferSource(), lp = ac.createBiquadFilter(), ng = ac.createGain();
+      noise.buffer = buf; lp.type = "lowpass"; lp.frequency.value = 1800; ng.gain.value = 0.18;
+      noise.connect(lp); lp.connect(ng); ng.connect(ac.destination); noise.start(t0);
+      const thump = ac.createOscillator(), tg = ac.createGain();
+      thump.type = "square"; thump.frequency.setValueAtTime(110, t0); thump.frequency.exponentialRampToValueAtTime(45, t0 + 0.09);
+      tg.gain.setValueAtTime(0.08, t0); tg.gain.linearRampToValueAtTime(0, t0 + 0.1);
+      thump.connect(tg); tg.connect(ac.destination); thump.start(t0); thump.stop(t0 + 0.12);
+      // the rising arpeggio
+      [523, 659, 784, 1047, 1319].forEach((f, i) => note("square", f, 0.2 + i * 0.07, 0.09, 0.045));
+      // two stabs, then the held chord
+      const stab = (at, freqs, dur, vib) => freqs.forEach((f, i) => note(i ? "triangle" : "square", f, at, dur, i ? 0.035 : 0.045, vib));
+      stab(0.62, [784, 988, 1175], 0.13);
+      stab(0.82, [880, 1047, 1319], 0.13);
+      stab(1.02, [988, 1175, 1568], 0.95, 0.012);
+      // bass line
+      [[131, 0.2, 0.36], [98, 0.62, 0.16], [110, 0.82, 0.16], [196, 1.02, 0.95]].forEach(([f, at, dur]) => note("triangle", f, at, dur, 0.09));
+    } catch (e) { /* no audio available */ }
+  }
+
   // ---------- Zuk Mode (cheat code) ----------
   // Stagger the portrait rows so the color cycle ripples down the face
   document.querySelectorAll(".photo svg > rect, .photo svg > path").forEach((el, i) => el.style.setProperty("--i", i));
@@ -1877,7 +1921,7 @@
       if (!warped) {
         try { best = +localStorage.getItem("zukClimbBest") || null; if (!best || time < best) { best = time; localStorage.setItem("zukClimbBest", String(Math.round(time))); } } catch (e) { best = time; }
       }
-      fanfare();
+      victoryJingle();
       // lights on: a quick flash, then the darkness fades away from the whole page (see drawDarkness)
       const flash = document.createElement("div");
       flash.className = "flash";
