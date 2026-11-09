@@ -210,6 +210,19 @@
   .wish canvas { width: 72px; height: 72px; margin-bottom: 14px; }
   .wish h3 { font-size: 11px; line-height: 1.6; color: var(--gold); margin-bottom: 10px; }
   .wish p { font-size: 22px; flex: 1; }
+  /* release badges: a ticking countdown (gold), a release window (muted), or out now (green) */
+  .badge.soon { color: #2b1300; background: var(--gold); box-shadow: inset 0 2px 0 #fff1a8, inset 0 -2px 0 var(--rust), 0 -3px 0 var(--shadow), 0 3px 0 var(--shadow), -3px 0 0 var(--shadow), 3px 0 0 var(--shadow), 0 6px 0 var(--shadow); }
+  .badge.soon::before { content: "⏱"; font-size: 10px; }
+  .badge.tba { color: var(--ink); background: var(--cell-off); box-shadow: inset 0 2px 0 #3a4aa0, inset 0 -2px 0 var(--win-inset), 0 -3px 0 var(--shadow), 0 3px 0 var(--shadow), -3px 0 0 var(--shadow), 3px 0 0 var(--shadow), 0 6px 0 var(--shadow); }
+  /* a sticker slapped on the corner of the most anticipated game */
+  .sticker {
+    position: absolute; top: -16px; right: -12px; z-index: 2; transform: rotate(8deg);
+    font-family: "Press Start 2P", monospace; font-size: 8px; line-height: 1.5; text-align: center;
+    padding: 8px 10px; color: #2a0420; background: var(--pink);
+    box-shadow: inset 0 2px 0 #ffc2ee, inset 0 -2px 0 #b8338f,
+      0 -3px 0 var(--shadow), 0 3px 0 var(--shadow), -3px 0 0 var(--shadow), 3px 0 0 var(--shadow), 3px 6px 0 rgba(0, 0, 0, .45);
+  }
+  .sticker::after { content: ""; position: absolute; top: 0; right: 0; border: 5px solid; border-color: var(--night) var(--night) #b8338f #b8338f; } /* peeled corner */
 
   .game { text-align: center; }
   .game canvas { width: 104px; height: 104px; margin: 0 auto; }
@@ -425,12 +438,12 @@
     <div class="sec-head"><span class="sec-num win">07</span><h2 class="chrome">UP NEXT</h2></div>
     <p class="lede">The wishlist. My calendar is already cleared.</p>
     <div class="grid3">
-      <div class="win card wish"><canvas class="sprite" data-sprite="witcher4"></canvas><h3>THE WITCHER 4</h3><p>Monster contracts, hard choices, and another 100 hours I don't have.</p><span class="badge">WAITING</span></div>
-      <div class="win card wish"><canvas class="sprite" data-sprite="laufey"></canvas><h3>GOD OF WAR LAUFEY</h3><p>More Norse family drama. Count me in.</p><span class="badge">WAITING</span></div>
-      <div class="win card wish"><canvas class="sprite" data-sprite="tombRaider"></canvas><h3>TOMB RAIDER: LEGACY OF ATLANTIS</h3><p>Ancient ruins, deadly traps, zero health and safety inspections.</p><span class="badge">WAITING</span></div>
-      <div class="win card wish"><canvas class="sprite" data-sprite="phantomBlade"></canvas><h3>PHANTOM BLADE ZERO</h3><p>Fast swords, faster deaths. Mostly mine.</p><span class="badge">WAITING</span></div>
-      <div class="win card wish"><canvas class="sprite" data-sprite="gta6"></canvas><h3>GTA VI</h3><p>Waited this long. What's a little longer?</p><span class="badge">WAITING</span></div>
-      <div class="win card wish"><canvas class="sprite" data-sprite="hexe"></canvas><h3>ASSASSIN'S CREED HEXE</h3><p>A new Creed. Hood: ready. Haystacks: located.</p><span class="badge gold">MOST WANTED</span></div>
+      <div class="win card wish"><canvas class="sprite" data-sprite="witcher4"></canvas><h3>THE WITCHER 4</h3><p>Monster contracts, hard choices, and another 100 hours I don't have.</p><span class="badge tba">TARGETING 2028</span></div>
+      <div class="win card wish"><canvas class="sprite" data-sprite="laufey"></canvas><h3>GOD OF WAR LAUFEY</h3><p>More Norse family drama. Count me in.</p><span class="badge soon" data-release="2027-05-20">MAY 20, 2027</span></div>
+      <div class="win card wish"><canvas class="sprite" data-sprite="tombRaider"></canvas><h3>TOMB RAIDER: LEGACY OF ATLANTIS</h3><p>Ancient ruins, deadly traps, zero health and safety inspections.</p><span class="badge soon" data-release="2027-02-12">FEB 12, 2027</span></div>
+      <div class="win card wish"><canvas class="sprite" data-sprite="phantomBlade"></canvas><h3>PHANTOM BLADE ZERO</h3><p>Fast swords, faster deaths. Mostly mine.</p><span class="badge">ALREADY OUT</span></div>
+      <div class="win card wish"><canvas class="sprite" data-sprite="gta6"></canvas><h3>GTA VI</h3><p>Waited this long. What's a little longer?</p><span class="badge soon" data-release="2026-11-19">NOV 19, 2026</span></div>
+      <div class="win card wish"><span class="sticker">MOST<br>ANTICIPATED</span><canvas class="sprite" data-sprite="hexe"></canvas><h3>ASSASSIN'S CREED HEXE</h3><p>A new Creed. Hood: ready. Haystacks: located.</p><span class="badge tba">RUMORED 2027</span></div>
     </div>
   </div>
 </section>
@@ -1465,6 +1478,22 @@
     }, 110);
   }, { threshold: .4 });
   platIo.observe(document.querySelector(".plat-card"));
+
+  // Up Next: badges with a release date count down to it (local midnight) and flip to ALREADY OUT on the day.
+  // The digits are padded so the badge keeps the same width while it ticks.
+  const releaseBadges = [...document.querySelectorAll(".badge[data-release]")];
+  function tickReleases() {
+    const now = Date.now();
+    for (const b of releaseBadges) {
+      const [y, m, d] = b.dataset.release.split("-").map(Number);
+      const left = new Date(y, m - 1, d) - now;
+      if (left <= 0) { b.textContent = "ALREADY OUT"; b.classList.remove("soon"); continue; }
+      const s = Math.floor(left / 1000), pad = n => String(n).padStart(2, "0");
+      b.textContent = `OUT IN ${String(Math.floor(s / 86400)).padStart(3, "0")}D ${pad(Math.floor(s / 3600) % 24)}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`;
+    }
+  }
+  tickReleases();
+  setInterval(tickReleases, 1000);
 
   // Short chiptune fanfare (square wave), played when the cheat fires
   // Original 8-bit "power-up" sound: a fast rising ladder up a pentatonic scale
