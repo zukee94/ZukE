@@ -1,0 +1,2318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZUK — Player One</title>
+<meta name="description" content="Meet Zuk: action and third-person gamer, part-time comedian, full-time Assassin's Creed devotee.">
+<meta property="og:title" content="ZUK — Player One">
+<meta property="og:description" content="Gamer. Part-time comedian. Full-time legend (self-declared).">
+<meta property="og:type" content="profile">
+<meta name="theme-color" content="#0d0b2b">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 8' shape-rendering='crispEdges'%3E%3Cpath fill='%23ff5a6a' d='M1 0h3v1H1zM5 0h3v1H5zM0 1h9v3H0zM1 4h7v1H1zM2 5h5v1H2zM3 6h3v1H3zM4 7h1v1H4z'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  /* Flat colors only, no gradients. Same fonts as the original page. */
+  :root {
+    --night: #0d0b2b;
+    --night-2: #15123d;
+    --ink: #f4f1ff;
+    --muted: #b9b6e0;
+    --gold: #ffd34d;
+    --orange: #ff9a1f;
+    --rust: #b8481a;
+    --plum: #7e2553;
+    --pink: #ff6fae;
+    --teal: #5ff2d6;
+    --green: #2fe08a;
+    --win: #1d3592;
+    --win-edge: #e6ebff;
+    --win-inset: #0a1240;
+    --shadow: #05081f;
+    --cell-off: #16226a;
+    --cell-off-shade: #0c1446;
+    --deep: #05041a;
+    --plat-shadow: #5a7fb8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  /* the sliding cards poke past the screen edge; clip them so phones don't zoom out */
+  html { scroll-behavior: smooth; scroll-padding-top: 72px; overflow-x: clip; }
+  body {
+    background: var(--night);
+    color: var(--ink);
+    font-family: "VT323", monospace;
+    font-size: 24px;
+    line-height: 1.25;
+    overflow-x: hidden;
+    overflow-x: clip;
+  }
+  /* Pixel display font for titles and labels, as in the original */
+  nav .logo, nav a, .tag, h1, h2, h3, .btn, .sec-num, .id-head, .id-meta, .divider,
+  .rare, .badge, .sub-h, footer .end, .toast .t1 {
+    font-family: "Press Start 2P", monospace; font-weight: normal;
+  }
+  canvas.sprite { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 0 16px; }
+  a:focus-visible, button:focus-visible { outline: 3px solid var(--gold); outline-offset: 4px; }
+
+  /* Gold title text with a hard offset shadow */
+  .chrome { color: var(--gold); text-shadow: 3px 3px 0 var(--rust); }
+
+  /* JRPG-style menu window, flat fill */
+  .win {
+    position: relative;
+    background: var(--win);
+    border: 3px solid var(--win-edge);
+    border-radius: 10px;
+    box-shadow: inset 0 0 0 2px var(--win-inset), 0 0 0 2px var(--shadow), 0 8px 0 2px rgba(0,0,0,.4);
+  }
+
+  nav {
+    position: sticky; top: 0; z-index: 40;
+    background: var(--night);
+    border-bottom: 3px solid var(--win-edge);
+  }
+  nav .wrap { display: flex; justify-content: space-between; align-items: center; min-height: 60px; gap: 12px; }
+  nav .logo { font-size: 14px; display: flex; gap: 10px; align-items: center; flex: none; }
+  nav .links { display: flex; gap: 20px; overflow-x: auto; scrollbar-width: none; }
+  nav .links::-webkit-scrollbar { display: none; }
+  nav a { color: var(--muted); text-decoration: none; font-size: 10px; white-space: nowrap; padding: 8px 0; }
+  nav a:hover { color: var(--gold); }
+  nav a:hover::before { content: "▶ "; }
+  @media (max-width: 600px) {
+    nav .logo span { display: none; }
+    nav .links { gap: 14px; }
+    nav a { font-size: 9px; }
+  }
+
+  /* sized to its content, with PRESS START about 230px above the floor so more of the scene shows
+     below it: out of reach from a standstill, reachable with a running jump */
+  header.hero {
+    display: grid; place-items: center; text-align: center;
+    position: relative; overflow: hidden; background: #2a1460;
+  }
+  #scene { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+  .hero-inner { position: relative; z-index: 2; padding: 40px 0 180px; }
+  .tag { color: var(--teal); font-size: 11px; line-height: 1.8; margin-bottom: 28px; text-shadow: 2px 2px 0 var(--shadow); }
+  h1.name {
+    font-size: clamp(64px, 18vw, 160px); line-height: 1;
+    text-shadow:
+      6px 0 0 var(--orange), 0 6px 0 var(--orange), 6px 6px 0 var(--orange),
+      12px 12px 0 var(--rust), 18px 18px 0 var(--shadow);
+    animation: bob 1s steps(2) infinite;
+  }
+  @keyframes bob { 50% { transform: translateY(-6px); } }
+  .subtitle { margin-top: 36px; font-size: clamp(24px, 3.4vw, 32px); text-shadow: 3px 3px 0 var(--shadow); }
+  .subtitle b { color: var(--teal); font-weight: normal; }
+  .intro { margin: 18px auto 0; max-width: 600px; padding: 12px 20px; font-size: clamp(22px, 2.8vw, 26px); text-align: left; }
+  /* Arcade-style button: notched pixel corners, bevel, physical press depth, blinking cursor */
+  .btn {
+    position: relative; display: inline-block; margin-top: 40px; text-decoration: none; color: #2b1300;
+    font-size: 13px; padding: 18px 28px 18px 46px; background: var(--gold);
+    box-shadow:
+      inset 0 4px 0 #fff1a8, inset 0 -4px 0 var(--orange), inset 4px 0 0 #ffe27a, inset -4px 0 0 #e9a92a,
+      0 -4px 0 var(--shadow), 0 4px 0 var(--shadow), -4px 0 0 var(--shadow), 4px 0 0 var(--shadow),
+      0 12px 0 var(--rust), 4px 8px 0 var(--shadow), -4px 8px 0 var(--shadow), 0 16px 0 var(--shadow);
+    transition: transform .06s steps(1);
+  }
+  .btn::before {
+    content: "▶"; position: absolute; left: 18px; top: 50%; transform: translateY(-50%);
+    animation: nudge .6s steps(2) infinite;
+  }
+  .btn .label { animation: blink 1s steps(1) 4; }
+  .btn:hover { background: #ffe27a; }
+  .btn:active {
+    transform: translateY(10px);
+    box-shadow:
+      inset 0 4px 0 var(--orange), inset 0 -4px 0 #fff1a8,
+      0 -4px 0 var(--shadow), 0 4px 0 var(--shadow), -4px 0 0 var(--shadow), 4px 0 0 var(--shadow), 0 6px 0 var(--shadow);
+  }
+  @keyframes nudge { 50% { transform: translate(4px, -50%); } }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  section { padding: 96px 0; }
+  section:nth-of-type(odd) { background: var(--night); }
+  section:nth-of-type(even) { background: var(--night-2); }
+  .sec-head { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+  .sec-num { font-size: 12px; padding: 8px 10px; color: var(--ink); }
+  h2 { font-size: clamp(14px, 3vw, 20px); line-height: 1.5; }
+  .lede { color: var(--muted); margin-bottom: 40px; }
+
+  .card { padding: 24px; transition: transform .15s steps(2); }
+  .card:hover { transform: translate(-3px, -3px); }
+
+  /* Player ID card */
+  .profile { display: grid; gap: 32px; }
+  .id-head { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-bottom: 20px; }
+  .id-head b { color: var(--gold); font-weight: normal; }
+  /* Portrait on the left, short description on the right (kept side by side on phones too) */
+  .id-body { display: grid; grid-template-columns: auto 1fr; gap: 32px; align-items: center; }
+  .photo { height: 360px; display: flex; align-items: center; }
+  /* Same flat gold and hard orange/rust shadow as the ZUK title */
+  .photo svg {
+    height: 100%; width: auto; shape-rendering: crispEdges;
+    filter: drop-shadow(3px 3px 0 var(--orange)) drop-shadow(3px 3px 0 var(--rust));
+  }
+  @media (max-width: 640px) {
+    .id-body { gap: 18px; align-items: start; }
+    .photo { height: 230px; }
+    .bio { font-size: 21px !important; }
+  }
+  .id-meta { margin-top: 22px; display: grid; grid-template-columns: auto 1fr; gap: 10px 14px; font-size: 10px; line-height: 1.6; align-items: center; }
+  .id-meta dt { color: var(--muted); }
+  .id-meta dd { color: var(--gold); }
+  .lives { display: flex; gap: 6px; align-items: center; }
+  .lives canvas { width: 22px; height: 20px; }
+
+  .bio { font-size: 26px; }
+  .bio b { color: var(--teal); font-weight: normal; }
+  .bio + .bio { margin-top: 14px; }
+
+  /* Skill meters, built like HP bars: 20 cells (5 points each) that light up one by one.
+     Low scores turn red and the last cell blinks, like a low-health warning. */
+  .divider { margin-bottom: 24px; font-size: 14px; color: var(--pink); }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px 44px; }
+  .stat-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 26px; }
+  .stat-row b { color: var(--gold); font-weight: normal; }
+  .stat-row b small { color: var(--muted); font-size: 20px; }
+  .bar {
+    display: flex; gap: 2px; height: 22px; margin: 6px 4px 6px; padding: 3px; background: var(--shadow);
+    box-shadow:
+      0 -3px 0 var(--win-edge), 0 3px 0 var(--win-edge), -3px 0 0 var(--win-edge), 3px 0 0 var(--win-edge),
+      0 -6px 0 var(--shadow), 0 6px 0 var(--shadow), -6px 0 0 var(--shadow), 6px 0 0 var(--shadow);
+  }
+  .cell { flex: 1; background: var(--cell-off); box-shadow: inset 0 -3px 0 var(--cell-off-shade); }
+  .cell.on { background: var(--gold); box-shadow: inset 0 3px 0 #fff1a8, inset 0 -3px 0 var(--rust); }
+  .bar.low .cell.on { background: #ff4a5e; box-shadow: inset 0 3px 0 #ffb3bb, inset 0 -3px 0 #8a0f24; }
+  .bar.low .cell.tip { animation: blink .5s steps(1) infinite; }
+  .stat.low .stat-row b { color: #ff4a5e; }
+  /* Zuk Mode: lit cells cycle through flat colors (values stay as they are) */
+  body.zuk-mode .bar .cell.on { animation: rainbow .8s steps(1) infinite; animation-delay: calc(var(--i) * -40ms); }
+  @keyframes rainbow {
+    0% { background: #ff4a5e; } 20% { background: var(--orange); } 40% { background: var(--gold); }
+    60% { background: var(--green); } 80% { background: #4fb8ff; }
+  }
+
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 32px; }
+  .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 32px; }
+  .ach { display: flex; gap: 18px; align-items: flex-start; }
+  .ach canvas { width: 54px; height: 54px; flex: none; }
+  .ach h3 { font-size: 11px; line-height: 1.5; color: var(--gold); margin-bottom: 10px; }
+  .ach p { font-size: 22px; }
+  .ach .rare { display: inline-block; margin-top: 10px; font-size: 9px; line-height: 1.5; color: var(--teal); }
+  .about h3 { color: var(--teal); }
+  /* Hall of Shame: same cards as achievements, in red */
+  .shame h3 { color: var(--pink); }
+  .shame .rare { color: #ff4a5e; }
+  /* Up Next: text-only cards, badge pinned to the bottom */
+  .wish { display: flex; flex-direction: column; align-items: flex-start; }
+  .wish canvas { width: 72px; height: 72px; margin-bottom: 14px; }
+  .wish h3 { font-size: 11px; line-height: 1.6; color: var(--gold); margin-bottom: 10px; }
+  .wish p { font-size: 22px; flex: 1; }
+  /* release badges: a ticking countdown (gold), a release window (muted), or out now (green) */
+  .badge.soon { color: #2b1300; background: var(--gold); box-shadow: inset 0 2px 0 #fff1a8, inset 0 -2px 0 var(--rust), 0 -3px 0 var(--shadow), 0 3px 0 var(--shadow), -3px 0 0 var(--shadow), 3px 0 0 var(--shadow), 0 6px 0 var(--shadow); }
+  .badge.soon { font-size: 8px; gap: 6px; max-width: 100%; line-height: 1.6; } /* wraps instead of overflowing a narrow card */
+  /* a tiny pixel-art stopwatch */
+  .badge.soon::before { content: ""; flex: none; width: 14px; height: 16px; background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 7 8' shape-rendering='crispEdges' fill='%232b1300'><rect x='2' y='0' width='1' height='1'/><rect x='3' y='0' width='1' height='1'/><rect x='4' y='0' width='1' height='1'/><rect x='3' y='1' width='1' height='1'/><rect x='1' y='2' width='1' height='1'/><rect x='2' y='2' width='1' height='1'/><rect x='3' y='2' width='1' height='1'/><rect x='4' y='2' width='1' height='1'/><rect x='5' y='2' width='1' height='1'/><rect x='0' y='3' width='1' height='1'/><rect x='3' y='3' width='1' height='1'/><rect x='6' y='3' width='1' height='1'/><rect x='0' y='4' width='1' height='1'/><rect x='3' y='4' width='1' height='1'/><rect x='6' y='4' width='1' height='1'/><rect x='0' y='5' width='1' height='1'/><rect x='4' y='5' width='1' height='1'/><rect x='6' y='5' width='1' height='1'/><rect x='0' y='6' width='1' height='1'/><rect x='6' y='6' width='1' height='1'/><rect x='1' y='7' width='1' height='1'/><rect x='2' y='7' width='1' height='1'/><rect x='3' y='7' width='1' height='1'/><rect x='4' y='7' width='1' height='1'/><rect x='5' y='7' width='1' height='1'/></svg>") no-repeat center / contain; image-rendering: pixelated; }
+  .badge.tba { color: var(--ink); background: var(--cell-off); box-shadow: inset 0 2px 0 #3a4aa0, inset 0 -2px 0 var(--win-inset), 0 -3px 0 var(--shadow), 0 3px 0 var(--shadow), -3px 0 0 var(--shadow), 3px 0 0 var(--shadow), 0 6px 0 var(--shadow); }
+  /* a sticker slapped on the corner of the most anticipated game */
+  .sticker {
+    position: absolute; top: -16px; right: -12px; z-index: 2; transform: rotate(8deg);
+    font-family: "Press Start 2P", monospace; font-size: 8px; line-height: 1.5; text-align: center;
+    padding: 8px 10px; color: #2a0420; background: var(--pink);
+    box-shadow: inset 0 2px 0 #ffc2ee, inset 0 -2px 0 #b8338f,
+      0 -3px 0 var(--shadow), 0 3px 0 var(--shadow), -3px 0 0 var(--shadow), 3px 0 0 var(--shadow), 3px 6px 0 rgba(0, 0, 0, .45);
+  }
+  .sticker::after { content: ""; position: absolute; top: 0; right: 0; border: 5px solid; border-color: var(--night) var(--night) #b8338f #b8338f; } /* peeled corner */
+
+  .game { text-align: center; }
+  .game canvas { width: 104px; height: 104px; margin: 0 auto; }
+  .game h3 { margin: 18px 0 10px; font-size: 12px; line-height: 1.6; }
+  .game p { font-size: 22px; }
+  /* Pixel tags with notched corners and a bevel */
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px; margin-top: 18px; font-size: 9px; line-height: 1;
+    padding: 8px 10px; color: #062a1c; background: var(--green);
+    box-shadow:
+      inset 0 2px 0 #9dffc9, inset 0 -2px 0 #128a52,
+      0 -3px 0 var(--shadow), 0 3px 0 var(--shadow), -3px 0 0 var(--shadow), 3px 0 0 var(--shadow), 0 6px 0 var(--shadow);
+  }
+  .badge.gold { color: #2b1300; background: var(--gold); box-shadow: inset 0 2px 0 #fff1a8, inset 0 -2px 0 var(--rust), 0 -3px 0 var(--shadow), 0 3px 0 var(--shadow), -3px 0 0 var(--shadow), 3px 0 0 var(--shadow), 0 6px 0 var(--shadow); }
+  /* "Now playing" gets a blinking record light */
+  .badge.live::before { content: ""; width: 6px; height: 6px; background: #ff004d; box-shadow: 0 0 0 2px var(--shadow); animation: blink 1s steps(1) infinite; }
+  .sub-h { font-size: 12px; line-height: 1.6; color: var(--pink); margin: 56px 0 24px; }
+
+  .fav { display: grid; grid-template-columns: auto 1fr; gap: 28px; align-items: center; padding: 30px; }
+  .fav canvas { width: 120px; height: 120px; }
+  .fav h3 { font-size: 16px; line-height: 1.5; margin-bottom: 14px; }
+  .fav blockquote { font-size: clamp(28px, 4vw, 38px); line-height: 1.1; }
+  .fav blockquote::before { content: "“"; color: var(--gold); }
+  .fav blockquote::after { content: "”"; color: var(--gold); }
+  .fav .hours { margin-top: 10px; color: var(--muted); }
+  @media (max-width: 560px) { .fav { grid-template-columns: 1fr; text-align: center; } .fav canvas { margin: 0 auto; } }
+
+  /* Platinum trophy counter: number ticks up, trophies on the shelf light up one by one */
+  .plat-card { display: grid; grid-template-columns: auto 1fr; gap: 36px; align-items: center; padding: 32px; }
+  .plat-card > canvas { width: 140px; height: 165px; }
+  .plat-count { font-family: "Press Start 2P", monospace; font-size: clamp(56px, 11vw, 96px); line-height: 1; color: #eaf6ff; text-shadow: 4px 4px 0 var(--plat-shadow), 8px 8px 0 var(--shadow); }
+  .plat-count span { display: inline-block; }
+  .plat-count span.pop { animation: pop .12s steps(2); }
+  @keyframes pop { 50% { transform: scale(1.18); } }
+  .plat-label { font-family: "Press Start 2P", monospace; font-size: 11px; line-height: 1.6; color: var(--teal); margin: 18px 0 20px; }
+  .plat-shelf { display: flex; flex-wrap: wrap; gap: 8px; }
+  .plat-shelf canvas { width: 24px; height: 28px; opacity: .22; filter: grayscale(1) brightness(.6); }
+  .plat-shelf canvas.lit { opacity: 1; filter: none; animation: pop .2s steps(2); }
+  @media (max-width: 560px) {
+    .plat-card { grid-template-columns: 1fr; text-align: center; justify-items: center; }
+    .plat-shelf { justify-content: center; }
+  }
+
+  footer { padding: 60px 0; text-align: center; background: var(--deep); color: var(--muted); }
+  footer .end { font-size: 14px; line-height: 1.6; margin-bottom: 16px; }
+  footer p { display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; }
+  footer canvas { width: 22px; height: 20px; }
+  footer .hint { margin-top: 16px; font-size: 20px; opacity: .6; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translate(-50%, 200%);
+    padding: 12px 20px; display: flex; gap: 14px; align-items: center; z-index: 60;
+    transition: transform .3s steps(4), visibility .3s; max-width: calc(100% - 32px); visibility: hidden;
+  }
+  .toast.show { transform: translate(-50%, 0); visibility: visible; }
+  .toast canvas { width: 36px; height: 36px; }
+  .toast .t1 { font-size: 9px; color: var(--teal); margin-bottom: 6px; }
+  .toast .t2 { font-size: 24px; }
+
+  /* Cheat code effects */
+  .flash { position: fixed; inset: 0; z-index: 80; background: #fff; pointer-events: none; animation: flash .45s steps(3) forwards; }
+  @keyframes flash { to { opacity: 0; } }
+  /* shake the page content, not <body>, so fixed overlays stay pinned to the screen */
+  body.shake > nav, body.shake > header, body.shake > section, body.shake > footer { animation: shake .5s steps(8); }
+  @keyframes shake {
+    0%, 100% { transform: none; } 12% { transform: translate(-8px, 4px); } 25% { transform: translate(8px, -4px); }
+    37% { transform: translate(-6px, -6px); } 50% { transform: translate(6px, 6px); } 62% { transform: translate(-4px, 2px); }
+    75% { transform: translate(4px, -2px); } 87% { transform: translate(-2px, 0); }
+  }
+  .rain { position: fixed; inset: 0; z-index: 70; pointer-events: none; overflow: hidden; }
+  .rain canvas { position: absolute; top: -60px; animation: fall var(--d) steps(30) var(--delay) forwards; }
+  @keyframes fall { to { transform: translateY(calc(100vh + 120px)) rotate(var(--r)); } }
+  .cheat {
+    position: fixed; left: 50%; top: 50%; z-index: 75; transform: translate(-50%, -50%) scale(0);
+    padding: 28px 32px; text-align: center; width: min(560px, calc(100% - 32px));
+    transition: transform .3s steps(4);
+  }
+  .cheat.show { transform: translate(-50%, -50%) scale(1); }
+  .cheat .big { font-family: "Press Start 2P", monospace; font-size: clamp(16px, 4vw, 26px); line-height: 1.5; color: var(--gold); text-shadow: 3px 3px 0 var(--rust); animation: blink .4s steps(1) 6; }
+  .cheat .small { font-family: "Press Start 2P", monospace; font-size: 10px; line-height: 2; color: var(--teal); margin-top: 14px; }
+  body.zuk-mode h1.name { animation: bob 1s steps(2) infinite, titleCycle .8s steps(1) infinite; }
+  @keyframes titleCycle { 0% { color: var(--gold); } 25% { color: var(--teal); } 50% { color: var(--pink); } 75% { color: var(--green); } }
+
+  /* ---------- Zuk Mode (cheat code) ---------- */
+  /* Palette swaps from blue to dark purple */
+  body.zuk-mode {
+    --night: #13061c; --night-2: #1d0a2a; --win: #3b1658; --win-inset: #1e0830; --win-edge: #f3dcff;
+    --shadow: #0c0312; --cell-off: #2c0f42; --cell-off-shade: #1a0629; --deep: #0a0210;
+    --muted: #cdb4e6; --pink: #ff7ad9; --teal: #7dffd0; --plat-shadow: #8a5fb8;
+  }
+  body.zuk-mode header.hero { background: #1d0a2a; }
+  /* Lives keep their count but cycle colors */
+  body.zuk-mode .lives canvas { animation: hueCycle .8s steps(5) infinite; }
+  body.zuk-mode .lives canvas:nth-child(2) { animation-delay: -.16s; }
+  body.zuk-mode .lives canvas:nth-child(3) { animation-delay: -.32s; }
+  @keyframes hueCycle { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }
+  /* Portrait cycles colors row by row, like the skill bars */
+  body.zuk-mode .photo svg > rect, body.zuk-mode .photo svg > path {
+    animation: rainbowFill .8s steps(1) infinite; animation-delay: calc(var(--i) * -25ms);
+  }
+  @keyframes rainbowFill {
+    0% { fill: #ff4a5e; } 20% { fill: var(--orange); } 40% { fill: var(--gold); }
+    60% { fill: var(--green); } 80% { fill: #4fb8ff; }
+  }
+  /* Glint in the eye */
+  .photo .glint { opacity: 0; transform-box: fill-box; transform-origin: center; }
+  body.zuk-mode .photo .glint { animation: glint 2.4s steps(1) infinite; }
+  @keyframes glint {
+    0%, 66%, 100% { opacity: 0; transform: scale(.4); }
+    70% { opacity: .7; transform: scale(.7); } 76% { opacity: 1; transform: scale(1); } 84% { opacity: .6; transform: scale(.6); }
+  }
+  /* Faint scanlines, plus short glitch bursts */
+  body.zuk-mode::after {
+    content: ""; position: fixed; inset: 0; z-index: 64; pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,.14) 0 1px, transparent 1px 3px);
+  }
+  body.glitching > nav, body.glitching > header, body.glitching > section, body.glitching > footer { animation: glitchJitter .28s steps(4); }
+  @keyframes glitchJitter {
+    0% { transform: translateX(-8px); } 25% { transform: translate(9px, 2px) skewX(-2deg); }
+    50% { transform: translate(-5px, -1px); } 75% { transform: translateX(4px) skewX(1deg); }
+  }
+  /* strong red/cyan split on text while glitching */
+  body.glitching h1.name { text-shadow: -6px 0 0 #ff2bd6, 6px 0 0 #2bffe6, 12px 12px 0 var(--rust) !important; }
+  body.glitching h2, body.glitching h3, body.glitching p, body.glitching .stat-row, body.glitching .id-meta,
+  body.glitching .badge, body.glitching nav a { text-shadow: -4px 0 0 #ff2bd6, 4px 0 0 #2bffe6; }
+  /* one random section "tears" with a color shift during a big glitch */
+  .glitch-tear { filter: hue-rotate(90deg) saturate(1.6) contrast(1.2); }
+  .glitch-bars { position: fixed; inset: 0; z-index: 66; pointer-events: none; }
+  .glitch-bars i { position: absolute; left: 0; right: 0; opacity: .55; }
+  .glitch-bars i.block { left: auto; right: auto; opacity: .7; }
+  /* Fireworks layer */
+  .fireworks { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 65; pointer-events: none; image-rendering: pixelated; }
+  /* Dismiss button, pinned to the bottom of the screen while Zuk Mode is on */
+  .dismiss {
+    display: none; position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 85;
+    font-family: "Press Start 2P", monospace; font-size: 11px; color: #2a0420; cursor: pointer; border: 0;
+    padding: 14px 18px 14px 38px; background: var(--pink); white-space: nowrap;
+    box-shadow:
+      inset 0 4px 0 #ffc2ee, inset 0 -4px 0 #b8338f,
+      0 -4px 0 var(--shadow), 0 4px 0 var(--shadow), -4px 0 0 var(--shadow), 4px 0 0 var(--shadow),
+      0 10px 0 #7a1a5e, 0 14px 0 var(--shadow);
+  }
+  .dismiss::before { content: "✕"; position: absolute; left: 15px; top: 50%; transform: translateY(-50%); }
+  .dismiss:hover { background: #ffa3e6; }
+  .dismiss:active { transform: translate(-50%, 8px); box-shadow: 0 -4px 0 var(--shadow), 0 4px 0 var(--shadow), -4px 0 0 var(--shadow), 4px 0 0 var(--shadow); }
+  body.zuk-mode .dismiss { display: inline-block; }
+  body.zuk-mode .toast { bottom: 100px; }
+
+  /* ---------- Div Climber ---------- */
+  /* the game layer: the hero, section lines, dust and confetti */
+  .fx-layer { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 58; pointer-events: none; }
+  /* text blocks hug their text */
+  section .lede, section .sub-h, footer .end, footer p { width: fit-content; }
+  header .tag, header h1.name, header .subtitle, footer .end, footer p { width: fit-content; margin-left: auto; margin-right: auto; }
+  nav a { display: inline-block; }
+  /* HUD: height, time and controls */
+  .mg-hud {
+    position: fixed; top: 74px; right: 12px; z-index: 59; width: 200px; display: grid; gap: 10px;
+    padding: 12px; font-family: "Press Start 2P", monospace; font-size: 8px; line-height: 1.7; color: var(--muted);
+    pointer-events: none;
+  }
+  .mg-title { color: var(--gold); font-size: 9px; }
+  .mg-extra:empty { display: none; }
+  .mg-extra b { color: var(--gold); font-weight: normal; font-size: 10px; }
+  @media (max-width: 600px) { .mg-hud { width: 170px; top: 70px; right: 8px; padding: 9px; font-size: 7px; } }
+  /* on-screen buttons for touch screens (hidden when there's a mouse and keyboard) */
+  .pad { position: fixed; left: 0; right: 0; bottom: 16px; z-index: 61; display: flex; justify-content: space-between; padding: 0 16px; pointer-events: none; }
+  .pad div { display: flex; gap: 12px; }
+  .pad button {
+    pointer-events: auto; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+    width: 64px; height: 64px; border: 0; cursor: pointer; font-family: "Press Start 2P", monospace; font-size: 18px;
+    color: var(--ink); background: var(--win); opacity: .85;
+    box-shadow: inset 0 0 0 3px var(--win-edge), 0 0 0 2px var(--shadow), 0 6px 0 var(--shadow);
+  }
+  .pad button[data-key="jump"] { width: 96px; font-size: 10px; color: #2b1300; background: var(--gold); box-shadow: inset 0 4px 0 #fff1a8, inset 0 -4px 0 var(--orange), 0 0 0 2px var(--shadow), 0 6px 0 var(--shadow); }
+  .pad button.on { transform: translateY(4px); box-shadow: inset 0 0 0 3px var(--win-edge), 0 0 0 2px var(--shadow); }
+  @media (hover: hover) and (pointer: fine) { .pad { display: none; } }
+  @media (hover: none), (pointer: coarse) { .toast { bottom: 100px; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<nav aria-label="Main">
+  <div class="wrap">
+    <div class="logo"><canvas class="sprite" id="logoPad" data-sprite="controller" style="width:34px;height:34px;cursor:pointer"></canvas><span class="chrome">ZUK.EXE</span></div>
+    <div class="links">
+      <a href="#profile">PROFILE</a>
+      <a href="#about">ABOUT</a>
+      <a href="#achievements">TROPHIES</a>
+      <a href="#platinum">PLATINUM</a>
+      <a href="#games">GAMES</a>
+      <a href="#shame">SHAME</a>
+      <a href="#upnext">UP NEXT</a>
+    </div>
+  </div>
+</nav>
+
+<footer>
+  <div class="wrap">
+    <div class="end chrome">GAME OVER? NEVER.</div>
+    <p>Made with <canvas class="sprite" data-sprite="heart" role="img" aria-label="love"></canvas> by Zuk.</p>
+    <p class="hint">Psst: there's a cheat code. ↑↑↓↓←→←→BA (on a phone, tap the controller in the top bar 5 times)</p>
+  </div>
+</footer>
+
+<section id="upnext">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num win">07</span><h2 class="chrome">UP NEXT</h2></div>
+    <p class="lede">The wishlist. My calendar is already cleared.</p>
+    <div class="grid3">
+      <div class="win card wish"><canvas class="sprite" data-sprite="witcher4"></canvas><h3>THE WITCHER 4</h3><p>Monster contracts, hard choices, and another 100 hours I don't have.</p><span class="badge tba">TARGETING 2028</span></div>
+      <div class="win card wish"><canvas class="sprite" data-sprite="laufey"></canvas><h3>GOD OF WAR LAUFEY</h3><p>More Norse family drama. Count me in.</p><span class="badge soon" data-release="2027-05-20T00:00:00+03:00" title="Countdown to release, Israel time">MAY 20, 2027</span></div>
+      <div class="win card wish"><canvas class="sprite" data-sprite="tombRaider"></canvas><h3>TOMB RAIDER: LEGACY OF ATLANTIS</h3><p>Ancient ruins, deadly traps, zero health and safety inspections.</p><span class="badge soon" data-release="2027-02-12T00:00:00+02:00" title="Countdown to release, Israel time">FEB 12, 2027</span></div>
+      <div class="win card wish"><canvas class="sprite" data-sprite="phantomBlade"></canvas><h3>PHANTOM BLADE ZERO</h3><p>Fast swords, faster deaths. Mostly mine.</p><span class="badge">ALREADY OUT</span></div>
+      <div class="win card wish"><canvas class="sprite" data-sprite="gta6"></canvas><h3>GTA VI</h3><p>Waited this long. What's a little longer?</p><span class="badge soon" data-release="2026-11-19T00:00:00+02:00" title="Countdown to release, Israel time">NOV 19, 2026</span></div>
+      <div class="win card wish"><span class="sticker">MOST<br>ANTICIPATED</span><canvas class="sprite" data-sprite="hexe"></canvas><h3>ASSASSIN'S CREED HEXE</h3><p>A new Creed. Hood: ready. Haystacks: located.</p><span class="badge tba">RUMORED 2027</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="shame">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num win">06</span><h2 class="chrome">HALL OF SHAME</h2></div>
+    <p class="lede">Every legend has a few save files they'd rather delete.</p>
+    <div class="grid2">
+      <div class="win card ach shame"><canvas class="sprite" data-sprite="brokenSword"></canvas><div><h3>PARRY? NEVER HEARD OF HER</h3><p>Missed the same parry in Clair Obscur 40 times in a row. The 41st was an accident.</p><span class="rare">FAILED 40 TIMES</span></div></div>
+      <div class="win card ach shame"><canvas class="sprite" data-sprite="skull"></canvas><div><h3>LEAP OF NO FAITH</h3><p>Jumped off the tallest tower in the game. Missed the haystack by one pixel.</p><span class="rare">0% OF ASSASSINS</span></div></div>
+      <div class="win card ach shame"><canvas class="sprite" data-sprite="lostMap"></canvas><div><h3>MAP? WHAT MAP?</h3><p>Two hours lost in Crimson Desert looking for a quest marker. It was right behind me.</p><span class="rare">WRONG WAY</span></div></div>
+      <div class="win card ach shame"><canvas class="sprite" data-sprite="pause"></canvas><div><h3>FORGOT TO PAUSE</h3><p>Put the controller down "for one second" in the middle of a boss fight. Came back to GAME OVER.</p><span class="rare">TOO COMMON</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="games">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num win">05</span><h2 class="chrome">GAMES</h2></div>
+    <p class="lede">Ask me about any of these and I won't stop talking.</p>
+    <div class="grid3">
+      <div class="win card game"><canvas class="sprite" data-sprite="pyramid"></canvas><h3>CONTROL RESONANT</h3><p>Bending reality. Still can't bend my sleep schedule.</p><span class="badge live">NOW PLAYING</span></div>
+      <div class="win card game"><canvas class="sprite" data-sprite="dawn"></canvas><h3>THE BLOOD OF DAWNWALKER</h3><p>Vampires, hard choices, zero daylight.</p><span class="badge gold">80+ HOURS</span></div>
+      <div class="win card game"><canvas class="sprite" data-sprite="desert"></canvas><h3>CRIMSON DESERT</h3><p>Open world, giant bosses, zero chill.</p><span class="badge gold">200+ HOURS</span></div>
+      <div class="win card game"><canvas class="sprite" data-sprite="axe"></canvas><h3>GOD OF WAR RAGNAROK</h3><p>Norse gods, a frozen axe, and a lot of dad energy.</p><span class="badge gold">150+ HOURS</span></div>
+      <div class="win card game"><canvas class="sprite" data-sprite="monolith"></canvas><h3>CLAIR OBSCUR: EXPEDITION 33</h3><p>Beautiful, brutal, and the best parry I've ever missed.</p><span class="badge gold">100+ HOURS</span></div>
+    </div>
+    <h3 class="sub-h">ALL-TIME FAVORITE</h3>
+    <div class="win fav">
+      <canvas class="sprite" data-sprite="hood" role="img" aria-label="Hooded assassin"></canvas>
+      <div>
+        <h3 class="chrome">ASSASSIN'S CREED</h3>
+        <blockquote>Nothing is true, everything is permitted.</blockquote>
+        <p class="hours">Over 1,000 hours across the whole series.</p>
+        <span class="badge gold">1000+ HOURS</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="platinum">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num win">04</span><h2 class="chrome">PLATINUM TROPHIES</h2></div>
+    <p class="lede">Every trophy in the game, collected. Not one skipped.</p>
+    <div class="win plat-card" aria-label="19 platinum trophies earned">
+      <canvas class="sprite" data-sprite="plat"></canvas>
+      <div>
+        <div class="plat-count" aria-hidden="true"><span id="platNum">0</span></div>
+        <div class="plat-label">PLATINUMS EARNED</div>
+        <div class="plat-shelf" id="platShelf" aria-hidden="true"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="achievements">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num win">03</span><h2 class="chrome">ACHIEVEMENTS</h2></div>
+    <p class="lede">Some of these may be slightly exaggerated.</p>
+    <div class="grid3">
+      <div class="win card ach"><canvas class="sprite" data-sprite="haystack"></canvas><div><h3>LEAP OF FAITH</h3><p>Jumped off every tall tower in every Assassin's Creed. Always found the haystack.</p><span class="rare">0.1% OF PLAYERS</span></div></div>
+      <div class="win card ach"><canvas class="sprite" data-sprite="moon"></canvas><div><h3>NIGHT OWL</h3><p>"Just one more save point" at 11pm. It's now 5am.</p><span class="rare">COMMON (FOR ZUK)</span></div></div>
+      <div class="win card ach"><canvas class="sprite" data-sprite="controller"></canvas><div><h3>CONTROLLER SURVIVOR</h3><p>Lost to the same boss 30 times. The controller survived. Character growth.</p><span class="rare">ULTRA RARE</span></div></div>
+      <div class="win card ach"><canvas class="sprite" data-sprite="pizza"></canvas><div><h3>ONE-HANDED HERO</h3><p>Beat a boss with one hand while eating pizza with the other.</p><span class="rare">2% OF PLAYERS</span></div></div>
+      <div class="win card ach"><canvas class="sprite" data-sprite="scroll"></canvas><div><h3>SIDE QUEST ADDICT</h3><p>60 hours in. Main story: 12% complete.</p><span class="rare">LEGENDARY</span></div></div>
+      <div class="win card ach"><canvas class="sprite" data-sprite="camera"></canvas><div><h3>PHOTO MODE PRO</h3><p>Spent longer framing the sunset than fighting the final boss.</p><span class="rare">0.5% OF PLAYERS</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="about">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num win">02</span><h2 class="chrome">WHAT I'M ABOUT</h2></div>
+    <p class="lede">The things that make me, me.</p>
+    <div class="grid2">
+      <div class="win card ach about"><canvas class="sprite" data-sprite="book"></canvas><div><h3>STORIES FIRST</h3><p>Give me a good plot and a big world and I'm gone for the weekend.</p></div></div>
+      <div class="win card ach about"><canvas class="sprite" data-sprite="star"></canvas><div><h3>ALWAYS JOKING</h3><p>If there's a joke to be found, I'll find it. Usually at the worst possible moment.</p></div></div>
+      <div class="win card ach about"><canvas class="sprite" data-sprite="key"></canvas><div><h3>CURIOUS BY DEFAULT</h3><p>Every locked door, every hidden path. If it's there, I want to know what's behind it.</p></div></div>
+      <div class="win card ach about"><canvas class="sprite" data-sprite="hourglass"></canvas><div><h3>AT MY OWN PACE</h3><p>No rush, no pressure. I take my time and enjoy the ride.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="profile">
+  <div class="wrap">
+    <div class="sec-head"><span class="sec-num win">01</span><h2 class="chrome">PLAYER PROFILE</h2></div>
+    <p class="lede">The short version, for anyone meeting me for the first time.</p>
+    <div class="profile">
+      <div class="win card">
+        <div class="divider">SKILL TREE</div>
+        <div class="stats">
+          <div class="stat"><div class="stat-row"><span>Assassin's Creed</span><b>95<small>/100</small></b></div><div class="bar"><i data-w="95"></i></div></div>
+          <div class="stat"><div class="stat-row"><span>Dark Humor</span><b>92<small>/100</small></b></div><div class="bar"><i data-w="92"></i></div></div>
+          <div class="stat"><div class="stat-row"><span>UI</span><b>90<small>/100</small></b></div><div class="bar"><i data-w="90"></i></div></div>
+          <div class="stat"><div class="stat-row"><span>Curiosity</span><b>88<small>/100</small></b></div><div class="bar"><i data-w="88"></i></div></div>
+          <div class="stat"><div class="stat-row"><span>Gaming</span><b>85<small>/100</small></b></div><div class="bar"><i data-w="85"></i></div></div>
+          <div class="stat"><div class="stat-row"><span>Crunch</span><b>85<small>/100</small></b></div><div class="bar"><i data-w="85"></i></div></div>
+          <div class="stat"><div class="stat-row"><span>Snack Consumption</span><b>90<small>/100</small></b></div><div class="bar"><i data-w="90"></i></div></div>
+          <div class="stat"><div class="stat-row"><span>Sleep Schedule</span><b>25<small>/100</small></b></div><div class="bar"><i data-w="25"></i></div></div>
+        </div>
+      </div>
+      <div class="win card">
+        <div class="id-head"><span>PLAYER ID</span><b>No. 001</b></div>
+        <div class="id-body">
+        <div class="photo">
+          <!-- ID photo: contents of Pixel_side.svg, embedded so the page works on its own -->
+          <svg class="pix" role="img" aria-label="Pixel-art side portrait of Zuk" viewBox="0 0 179 501" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect x="130" y="22" width="30" height="10" fill="#ffd34d"/>
+<rect x="107" y="32" width="53" height="10" fill="#ffd34d"/>
+<rect x="95" y="42" width="65" height="10" fill="#ffd34d"/>
+<rect x="77" y="52" width="83" height="10" fill="#ffd34d"/>
+<rect x="59" y="62" width="101" height="10" fill="#ffd34d"/>
+<rect x="47" y="72" width="113" height="10" fill="#ffd34d"/>
+<rect x="41" y="82" width="119" height="10" fill="#ffd34d"/>
+<rect x="41" y="92" width="108" height="10" fill="#ffd34d"/>
+<rect x="41" y="102" width="42" height="10" fill="#ffd34d"/>
+<rect x="34" y="112" width="42" height="10" fill="#ffd34d"/>
+<rect x="23" y="122" width="42" height="10" fill="#ffd34d"/>
+<rect x="17" y="132" width="37" height="10" fill="#ffd34d"/>
+<rect x="17" y="142" width="30" height="10" fill="#ffd34d"/>
+<rect x="17" y="152" width="30" height="10" fill="#ffd34d"/>
+<rect x="17" y="162" width="30" height="10" fill="#ffd34d"/>
+<path d="M17 172H40V182H17V172Z" fill="#ffd34d"/>
+<path d="M64 172H122V182H64V172Z" fill="#ffd34d"/>
+<path d="M17 182H34V192H17V182Z" fill="#ffd34d"/>
+<path d="M58.5 182H131V192H58.5V182Z" fill="#ffd34d"/>
+<path d="M17 192H27V202H17V192Z" fill="#ffd34d"/>
+<path d="M52.5 192H147V202H52.5V192Z" fill="#ffd34d"/>
+<path d="M17 202H77V212H17V202Z" fill="#ffd34d"/>
+<path d="M82.5 202H147V212H82.5V202Z" fill="#ffd34d"/>
+<path d="M17 212H70V222H17V212Z" fill="#ffd34d"/>
+<path d="M82.5 212H107V222H82.5V212Z" fill="#ffd34d"/>
+<path d="M118.5 212H147V222H118.5V212Z" fill="#ffd34d"/>
+<path d="M17 222.003H58V232.003H17V222.003Z" fill="#ffd34d"/>
+<path d="M89 222.003H100V232.003H89V222.003Z" fill="#ffd34d"/>
+<path d="M130.5 222H147V232H130.5V222Z" fill="#ffd34d"/>
+<path d="M17 232H48V242H17V232Z" fill="#ffd34d"/>
+<path d="M130.5 232H147V242H130.5V232Z" fill="#ffd34d"/>
+<path d="M17 242H40V252H17V242Z" fill="#ffd34d"/>
+<path d="M124 242H147V252H124V242Z" fill="#ffd34d"/>
+<path d="M17 252H34V262H17V252Z" fill="#ffd34d"/>
+<path d="M118 252H147V262H118V252Z" fill="#ffd34d"/>
+<path d="M17 262H27V272H17V262Z" fill="#ffd34d"/>
+<path d="M112.5 262H142V272H112.5V262Z" fill="#ffd34d"/>
+<path d="M17 272H22V282H17V272Z" fill="#ffd34d"/>
+<path d="M118 272H132V282H118V272Z" fill="#ffd34d"/>
+<path d="M17 282H22V292H17V282Z" fill="#ffd34d"/>
+<path d="M125.5 282H130.5V292H125.5V282Z" fill="#ffd34d"/>
+<path d="M17 292H22V302H17V292Z" fill="#ffd34d"/>
+<path d="M130.5 292H143V302H130.5V292Z" fill="#ffd34d"/>
+<rect x="17" y="302" width="5" height="10" fill="#ffd34d"/>
+<path d="M17 312H22V322H17V312Z" fill="#ffd34d"/>
+<path d="M87 312H160V322H87V312Z" fill="#ffd34d"/>
+<path d="M17 322H27V332H17V322Z" fill="#ffd34d"/>
+<path d="M74 322H160V332H74V322Z" fill="#ffd34d"/>
+<path d="M17 332.001H35V342.001H17V332.001Z" fill="#ffd34d"/>
+<path d="M65 332.001L100 332V342L65 342.001V332.001Z" fill="#ffd34d"/>
+<path d="M17 342H42V352H17V342Z" fill="#ffd34d"/>
+<path d="M65 342H90V352H65V342Z" fill="#ffd34d"/>
+<rect x="17" y="352" width="65" height="10" fill="#ffd34d"/>
+<rect x="17" y="361" width="65" height="10" fill="#ffd34d"/>
+<path d="M17 371H82V381H17V371Z" fill="#ffd34d"/>
+<path d="M116 371H161V381H116V371Z" fill="#ffd34d"/>
+<path d="M22 381H92V391H22V381Z" fill="#ffd34d"/>
+<path d="M106 381H161V391H106V381Z" fill="#ffd34d"/>
+<rect x="22" y="391" width="100" height="10" fill="#ffd34d"/>
+<rect x="27" y="401" width="90" height="10" fill="#ffd34d"/>
+<rect x="32" y="411" width="100" height="10" fill="#ffd34d"/>
+<rect x="42" y="421" width="119" height="10" fill="#ffd34d"/>
+<rect x="58" y="431" width="103" height="10" fill="#ffd34d"/>
+<rect x="66" y="441" width="95" height="10" fill="#ffd34d"/>
+<rect x="76" y="451" width="85" height="10" fill="#ffd34d"/>
+<rect x="86" y="461" width="75" height="10" fill="#ffd34d"/>
+<rect x="106" y="471" width="55" height="10" fill="#ffd34d"/>
+<!-- eye glint, only shown in Zuk Mode -->
+<g class="glint" fill="#ffffff">
+  <rect x="96" y="200" width="6" height="26"/>
+  <rect x="86" y="210" width="26" height="6"/>
+  <rect x="93" y="207" width="12" height="12"/>
+</g>
+</svg>
+        </div>
+        <div>
+          <p class="bio">
+            I'm <b>Zuk</b>. I'm into big action and third-person games, the kind with a world
+            worth getting lost in, and I've spent more hours in <b>Assassin's Creed</b> than
+            I'd like to admit.
+          </p>
+          <p class="bio">
+            Outside the game I'm usually the one making the room laugh. I don't take myself
+            too seriously, but I take my stories, my snacks and my save files very seriously.
+          </p>
+          <dl class="id-meta">
+            <dt>NAME</dt><dd>ZUK</dd>
+            <dt>CLASS</dt><dd>GAMER / JOKER</dd>
+            <dt>LEVEL</dt><dd id="level">99</dd>
+            <dt>GENRE</dt><dd>ACTION / 3RD PERSON</dd>
+            <dt>LIVES</dt>
+            <dd class="lives" aria-label="2 of 3 lives left">
+              <canvas class="sprite" data-sprite="heart"></canvas>
+              <canvas class="sprite" data-sprite="heart"></canvas>
+              <canvas class="sprite" data-sprite="heartEmpty"></canvas>
+            </dd>
+          </dl>
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<header class="hero">
+  <canvas id="scene" aria-hidden="true"></canvas>
+  <div class="hero-inner wrap">
+    <div class="tag">PLAYER 1 HAS ENTERED THE GAME</div>
+    <h1 class="name chrome">ZUK</h1>
+    <p class="subtitle">Gamer. Part-time comedian. <b>Full-time legend</b> (self-declared).</p>
+    <p class="intro win">Hi, I'm Zuk. I lose myself in big action games, I find the joke in everything, and I'm happiest exploring a world at my own pace.</p>
+    <a href="#profile" class="btn"><span class="label">PRESS START</span></a>
+  </div>
+</header>
+
+<div class="mg-hud win" id="mgHud" aria-live="off">
+  <div class="mg-title" id="mgTitle">DIV CLIMBER</div>
+  <div class="mg-extra" id="mgExtra"></div>
+</div>
+<div class="pad" aria-hidden="true">
+  <div><button type="button" data-key="left" tabindex="-1">◀</button><button type="button" data-key="right" tabindex="-1">▶</button></div>
+  <div><button type="button" data-key="down" tabindex="-1">▼</button><button type="button" data-key="jump" tabindex="-1">JUMP</button></div>
+</div>
+<div class="cheat win" id="cheat" role="alert"><div class="big">CHEAT ACTIVATED</div><div class="small">ZUK MODE ON<br>RAINBOW STATS · FIREWORKS · GLITCHES</div></div>
+<button class="dismiss" id="dismiss" type="button">DISMISS ZUK MODE</button>
+<div class="toast win" id="toast" role="status" aria-live="polite"><canvas class="sprite" data-sprite="star"></canvas><div><div class="t1">ACHIEVEMENT UNLOCKED</div><div class="t2" id="toastText"></div></div></div>
+
+<script>
+  // Sprite palette: several shades per color so icons look shaded, 32-bit style
+  const PAL = {
+    k: "#14101f", w: "#ffffff", W: "#d9dbe8", g: "#9a9db5", G: "#5a5d78",
+    y: "#ffe680", Y: "#f5b62a", o: "#d9771f",
+    r: "#ff5a6a", R: "#d11f3f", m: "#7a0f26",
+    b: "#8fdcff", B: "#3b8ff0", n: "#1d4fae",
+    e: "#c98a4b", E: "#8a5426", c: "#fff3c4", s: "#ffd4b0",
+    d: "#e8b46a", D: "#b97a3a", X: "#2a2a3a", x: "#07070d", h: "#2a2f5a",
+    A: "#dfe9f8", Q: "#a9bcd9", Z: "#6f82a8", J: "#140f3c", K: "#3a2a8a", L: "#6a8cff",
+    U: "#1b3fa8", O: "#2f6fe0", V: "#5aa6ff", I: "#a8dcff", H: "#f0faff",
+    N: "#2fe08a", M: "#1fa86a",
+    // Up Next icons: Vice City pinks and violets, sunset orange, Witcher teal, Lara's dark hair, Hexe sticks
+    p: "#ff5fc8", P: "#c42aa8", v: "#6a5cff", u: "#3d1466", F: "#ffb347",
+    t: "#9ff0ea", T: "#3fa6ad", a: "#5a3418",
+    S: "#c9ad86", C: "#86694e"
+  };
+  const OUTLINE = [20, 16, 31];
+
+  const SPRITES = {
+    controller: [
+      "................",
+      "................",
+      "................",
+      "...gggggggggg...",
+      "..gWWWWWWWWWWg..",
+      ".gWWkWWWWWWyWWg.",
+      ".gWkkkWWWWbWrWg.",
+      ".gWWkWWWWWWBWWg.",
+      ".gWWWWWkkWWWWWg.",
+      ".gWWWWggggWWWWg.",
+      ".gWWWgg..ggWWWg.",
+      ".gWWgg....ggWWg.",
+      "..ggg......ggg..",
+      "................",
+      "................",
+      "................"
+    ],
+    heart: [
+      ".rrr.rrr.",
+      "rwrrrrrrR",
+      "rrrrrrrrR",
+      "rrrrrrrRR",
+      ".rrrrrRR.",
+      "..rrrRR..",
+      "...rRR...",
+      "....R...."
+    ],
+    // A lost life: hollow heart outline
+    heartEmpty: [
+      ".ggg.ggg.",
+      "ghhhghhhg",
+      "ghhhhhhhg",
+      "ghhhhhhhg",
+      ".ghhhhhg.",
+      "..ghhhg..",
+      "...ghg...",
+      "....g...."
+    ],
+    book: [
+      "................",
+      "................",
+      "..mRRRRRRRRRRR..",
+      "..mRrrrrrrrrrR..",
+      "..mRrYYYYYYrrR..",
+      "..mRrYrrrrYrrR..",
+      "..mRrYYYYYYrrR..",
+      "..mRrrrrrrrrrR..",
+      "..mRrrrrrrrrrR..",
+      "..mRrrrYYrrrrR..",
+      "..mRrrrrrrrrrR..",
+      "..mRRRRRRRRRRR..",
+      "..mWWWWWWWWWWW..",
+      "..mmmmmmmmmmmm..",
+      "................",
+      "................"
+    ],
+    star: [
+      ".......yy.......",
+      ".......yy.......",
+      "......yyyY......",
+      "......yyyY......",
+      ".....yyyyYY.....",
+      "yyyyyyyyyYYYYYYo",
+      ".yyyyyyyyYYYYYo.",
+      "..yyyykyyYkYYo..",
+      "...yyyyyyYYYo...",
+      "....yykkkYYo....",
+      "....yyyyYYYo....",
+      "...yyyyo.YYYo...",
+      "...yyyo...YYo...",
+      "..yyo......Yo...",
+      "..yo.........o..",
+      "................"
+    ],
+    key: [
+      "................",
+      "................",
+      "................",
+      "................",
+      "..yyyy..........",
+      ".yY..Yy.........",
+      "yY....Yyyyyyyyyy",
+      "yY....YYYYYYYYYo",
+      ".yY..Yo...oY.oY.",
+      "..oooo....oo..o.",
+      "................",
+      "................"
+    ],
+    hourglass: [
+      "................",
+      "..EEEEEEEEEEEE..",
+      "...bwwwwwwwwb...",
+      "...byyyyyyyyb...",
+      "....byyyyyyb....",
+      ".....byyyyb.....",
+      "......byyb......",
+      ".......bb.......",
+      "......bwyb......",
+      ".....bwwyyb.....",
+      "....bwwwyyyb....",
+      "...bwwyyyyyyb...",
+      "...byyyyyyyyb...",
+      "..EEEEEEEEEEEE..",
+      "................",
+      "................"
+    ],
+    haystack: [
+      "................",
+      "................",
+      "................",
+      "................",
+      "......y.y.......",
+      "....yyYyYyy.....",
+      "...yYyyYyyYy....",
+      "..yyYyYyyYyYy...",
+      "..yYyyYyyyYyyy..",
+      ".yyYyYyyYyyYyYy.",
+      ".yYyyYyyYyyYyyy.",
+      "yyYyyYyYyyYyYyyY",
+      "yYoyYoyYoyYoyYoy",
+      "oooooooooooooooo",
+      "EEEEEEEEEEEEEEEE",
+      "................"
+    ],
+    moon: [
+      "................",
+      ".....yyyy.......",
+      "...yyyYYo.......",
+      "..yyYYo.........",
+      ".yyYYo..........",
+      ".yYYo.......w...",
+      "yyYo.......www..",
+      "yyYo........w...",
+      "yyYo............",
+      "yyYo............",
+      "yyYYo...........",
+      ".yyYYo.......b..",
+      ".yyyYYoo........",
+      "..yyyYYYoooo....",
+      "...yyyyYYYYoo...",
+      ".....yyyyyyy...."
+    ],
+    pizza: [
+      "................",
+      ".EeeeeeeeeeeeeE.",
+      ".EEEEEEEEEEEEEE.",
+      ".ycccRRcccccccy.",
+      ".ycccRRccccRRcy.",
+      "..yccccccccRRy..",
+      "..ycRRccccccy...",
+      "...ycRRcccccy...",
+      "...yccccccRcy...",
+      "....ycccRRcy....",
+      "....yccccccy....",
+      ".....yccccy.....",
+      ".....ycRcy......",
+      "......ycy.......",
+      "......yy........",
+      "................"
+    ],
+    scroll: [
+      "................",
+      "..EeeeeeeeeeeE..",
+      ".EecccccccccceE.",
+      "...cccccccccc...",
+      "...cGGGGGGGcc...",
+      "...cccccccccc...",
+      "...cGGGGGcccc...",
+      "...cccccccccc...",
+      "...cGGGGGGGcc...",
+      "...cccccccccc...",
+      "...cGGGGcRRcc...",
+      "...cccccRRccc...",
+      ".EecccccccccceE.",
+      "..EeeeeeeeeeeE..",
+      "................",
+      "................"
+    ],
+    camera: [
+      "................",
+      "................",
+      "...ggg....ww....",
+      ".GGGGGGGGGGGGGG.",
+      ".GggggBBBBgggrG.",
+      ".GgggBnnnnBgggG.",
+      ".GgggBnbwnBgggG.",
+      ".GgggBnnbnBgggG.",
+      ".GgggBnnnnBgggG.",
+      ".GggggBBBBggggG.",
+      ".GGGGGGGGGGGGGG.",
+      "................"
+    ],
+    // Control Resonant: the floating inverted pyramid, lit red from below
+    pyramid: [
+      "........................",
+      "..r..................r..",
+      "......r.........r.......",
+      ".RRRRRRRRRRRRRRRRRRRRRR.",
+      "..GXXXXXXXXXxxxxxxxxxx..",
+      "...GXXXXXXXXxxxxxxxxx...",
+      "....GXXXXXXXxxxxxxxx....",
+      ".....GXXXXXXxxxxxxx.....",
+      "......GXXXXXxxxxxx......",
+      ".......GXXXXxxxxx.......",
+      "........GXXXxxxx........",
+      ".........GXXxxx.........",
+      "..........GXxx..........",
+      "...........Gx...........",
+      "........................",
+      "...r...................r",
+      "...........rr...........",
+      "......r..........r......",
+      "..........r..r.........."
+    ],
+    // The Blood of Dawnwalker: half sun, half blood moon, with a drip
+    dawn() {
+      const rows = [], cx = 11.5, cy = 10.5, R = 9.3;
+      for (let y = 0; y < 24; y++) {
+        let row = "";
+        for (let x = 0; x < 24; x++) {
+          const dx = x - cx, dy = y - cy, d = Math.hypot(dx, dy);
+          let ch = ".";
+          if (d <= R) {
+            if (x < 12) ch = d > R - 1.3 ? "o" : (dx + dy < -7 ? "y" : "Y");
+            else ch = d > R - 1.3 ? "m"
+              : ((x - 15) ** 2 + (y - 7) ** 2 < 3 || (x - 17) ** 2 + (y - 13) ** 2 < 2 || (x - 13) ** 2 + (y - 16) ** 2 < 1.5) ? "m" : "R";
+          }
+          // three short sun rays on the day side
+          const ray = [[0, 10], [0, 11], [1, 10], [1, 11], [2, 1], [3, 2], [2, 20], [3, 19]];
+          if (ray.some(([rx, ry]) => rx === x && ry === y)) ch = "Y";
+          if ((x === 16 && (y === 19 || y === 20)) || ((y === 21 || y === 22) && x >= 15 && x <= 17) || (y === 23 && x === 16)) ch = "R";
+          if (x === 15 && y === 21) ch = "r";
+          row += ch;
+        }
+        rows.push(row);
+      }
+      return rows;
+    },
+    // Crimson Desert: greatsword planted in the dunes under a red sun
+    desert() {
+      const rows = [];
+      for (let y = 0; y < 24; y++) {
+        let row = "";
+        for (let x = 0; x < 24; x++) {
+          let ch = ".";
+          const d = Math.hypot(x - 16, y - 8);
+          if (d <= 5.3) ch = d > 4.3 ? "m" : (x + y < 22 ? "r" : "R");
+          const top1 = 15 + Math.round(1.6 * Math.sin(x * 0.38 + 1));
+          const top2 = 18 + Math.round(1.4 * Math.sin(x * 0.3 + 3));
+          if (y >= top1) ch = y === top1 ? "c" : "d";
+          if (y >= top2) ch = y === top2 ? "d" : "D";
+          if (x === 7 || x === 8) {
+            if (y === 2) ch = "Y";
+            else if (y >= 3 && y <= 5) ch = "E";
+            else if (y >= 7 && y <= 15) ch = x === 7 ? "w" : "g";
+          }
+          if (y === 6 && x >= 4 && x <= 11) ch = (x === 4 || x === 11) ? "o" : "Y";
+          row += ch;
+        }
+        rows.push(row);
+      }
+      return rows;
+    },
+    // Assassin's Creed: hooded assassin figure
+    // Div Climber hero: an original kid in a red cap, blue hoodie and sneakers (facing right)
+    climber: [
+      "...rrrrr....",
+      "..rrrrrrr...",
+      "..rrrrrrrrrr",
+      "..EEsssss...",
+      "..Esssksk...",
+      "..Esssssss..",
+      "...sssss....",
+      "..BBBBBBB...",
+      ".sBBBnBBBs..",
+      ".sBBBnBBBs..",
+      "..BBBBBBB...",
+      "..GGGGGGG...",
+      "..GGG.GGG...",
+      ".kwww.kwww.."
+    ],
+    // Hall of Shame icons
+    // a sword snapped in two
+    brokenSword: [
+      "................",
+      "............AA..",
+      "...........AQA..",
+      "..........AQZ...",
+      ".........AQZ....",
+      "................",
+      "........AZ......",
+      "................",
+      "......AQZ.......",
+      ".....AQZ........",
+      "..Y.AQZ.........",
+      "...YYZ..........",
+      "...EYY..........",
+      "..EE..Y.........",
+      ".EE.............",
+      "oo.............."
+    ],
+    skull: [
+      "................",
+      "....wwwwwwww....",
+      "...wwwwwwwwwW...",
+      "..wwwwwwwwwwwW..",
+      "..wwwwwwwwwwwW..",
+      "..wkkkwwwkkkwW..",
+      "..wkkkwwwkkkwW..",
+      "..wkkkwwwkkkwW..",
+      "..wwwwwkwwwwwW..",
+      "...wwwkkkwwwW...",
+      "....wwwwwwwW....",
+      "....wkwkwkwW....",
+      "....wwwwwwwW....",
+      ".....WWWWWW.....",
+      "................",
+      "................"
+    ],
+    // a treasure map whose dotted path wanders away from the X
+    lostMap: [
+      "................",
+      ".DDDDDDDDDDDDDD.",
+      ".DccccccccccccD.",
+      ".DcDcccccRcRccD.",
+      ".DccDcccccRcccD.",
+      ".DcccDcccRcRccD.",
+      ".DccccDcccccccD.",
+      ".DcccccDDcccccD.",
+      ".DcccccccDccccD.",
+      ".DccccccccDcccD.",
+      ".DcccccccDccccD.",
+      ".DccccccDcccccD.",
+      ".DccccccccccccD.",
+      ".DDDDDDDDDDDDDD.",
+      "................",
+      "................"
+    ],
+    pause: [
+      "................",
+      "..nnnnnnnnnnnn..",
+      ".nBBBBBBBBBBBBn.",
+      ".nBBBwwBBwwBBBn.",
+      ".nBBBwwBBwwBBBn.",
+      ".nBBBwwBBwwBBBn.",
+      ".nBBBwwBBwwBBBn.",
+      ".nBBBwwBBwwBBBn.",
+      ".nBBBwwBBwwBBBn.",
+      ".nBBBwwBBwwBBBn.",
+      ".nBBBwwBBwwBBBn.",
+      ".nBBBBBBBBBBBBn.",
+      "..nnnnnnnnnnnn..",
+      "................",
+      "................",
+      "................"
+    ],
+    hood: [
+      ".......WW.......",
+      "......WwwW......",
+      ".....WwwwwW.....",
+      "....WwwwwwwW....",
+      "...WwwwWWwwwW...",
+      "...WwwGkkGwwW...",
+      "..WwwGkkkkGwwW..",
+      "..WwGkkkkkkGwW..",
+      "..WwGkykkykGwW..",
+      "..WwGkkkkkkGwW..",
+      "..WwwGksskGwwW..",
+      "...WwwGsssGwwW..",
+      "..gWwwwGGwwwwWg.",
+      ".gWwwRRRRRRwwWg.",
+      ".gWwwwEEEEwwwWg.",
+      "gWwwwwEEEEwwwwWg"
+    ],
+    // Platinum trophy, as on PSN today: a glowing blue galaxy orb with the
+    // square / triangle / cross / circle symbols, cradled by silver crescent
+    // prongs on a glowing stem and a round silver base
+    plat() {
+      const W = 26, H = 31, cx = 12.5, oy = 8.5, r = 8.2;
+      const g = Array.from({ length: H }, () => Array(W).fill("."));
+      const put = (x, y, ch) => { if (x >= 0 && x < W && y >= 0 && y < H) g[y][x] = ch; };
+
+      // base: three stepped tiers, light on top, darker underneath
+      [[26, 4.2, "A"], [27, 5.2, "Q"], [28, 7.2, "A"], [29, 8.2, "Q"], [30, 8.2, "Z"]].forEach(([y, hw, ch]) => {
+        for (let x = 0; x < W; x++) if (Math.abs(x - cx) <= hw) put(x, y, x < cx - hw + 2 ? "w" : ch);
+      });
+      // stem with a beam of light running down its middle
+      for (let y = 17; y <= 25; y++) for (let x = 10; x <= 15; x++) {
+        const inner = x === 12 || x === 13;
+        if (y >= 22 || inner) put(x, y, inner ? (y < 22 ? "I" : "H") : (x < 12 ? "A" : "Q"));
+      }
+      // silver crescent prongs: [outer x, inner x] of the left prong per row, mirrored on the right
+      const prong = { 6: [3, 3], 7: [2, 3], 8: [2, 3], 9: [1, 3], 10: [1, 3], 11: [1, 3], 12: [1, 4], 13: [2, 4],
+        14: [2, 5], 15: [3, 6], 16: [4, 7], 17: [5, 8], 18: [6, 9], 19: [7, 10], 20: [8, 11], 21: [9, 11], 22: [10, 11] };
+      Object.entries(prong).forEach(([y, [a, b]]) => {
+        y = +y;
+        for (let x = a; x <= b; x++) {
+          put(x, y, x === a ? "Q" : x === b ? "w" : "A");               // left: lit
+          put(W - 1 - x, y, x === a ? "Z" : x === b ? "A" : "Q");       // right: in shade
+        }
+      });
+      // the orb: deep space blue, lighter toward the top left, glowing rim, a few stars
+      for (let y = 0; y <= 17; y++) for (let x = 0; x < W; x++) {
+        const dx = x - cx, dy = y - oy, d = Math.hypot(dx, dy);
+        if (d > r) continue;
+        if (d > r - 1) { put(x, y, "I"); continue; }
+        const t = (dx + dy) / r + 0.18 * (Math.sin(x * 1.3 + y * 0.7) + Math.sin(y * 1.1 - x * 0.4));
+        put(x, y, t < -1.15 ? "V" : t < 0.1 ? "O" : "U");
+      }
+      ["5,8", "20,8", "12,16", "12,1", "5,12", "20,13"].forEach(p => { const [x, y] = p.split(",").map(Number); put(x, y, "w"); });
+      // the four PlayStation symbols in white
+      const sym = [
+        // square
+        [7, 3], [8, 3], [9, 3], [10, 3], [7, 4], [10, 4], [7, 5], [10, 5], [7, 6], [8, 6], [9, 6], [10, 6],
+        // triangle
+        [16, 3], [15, 4], [17, 4], [14, 5], [18, 5], [14, 6], [15, 6], [16, 6], [17, 6], [18, 6],
+        // cross
+        [7, 10], [10, 10], [8, 11], [9, 11], [8, 12], [9, 12], [7, 13], [10, 13],
+        // circle
+        [15, 10], [16, 10], [14, 11], [17, 11], [14, 12], [17, 12], [15, 13], [16, 13]
+      ];
+      // nudge each symbol one pixel toward the centre of the orb
+      sym.forEach(([x, y]) => put(x + (x < cx ? 1 : -1), y + (y < oy ? 1 : -1), "w"));
+      return g.map(row => row.join(""));
+    },
+    // God of War Ragnarok: the Leviathan Axe with frost edge and runes
+    axe() {
+      const rows = [], A = [4, 22], B = [18, 3.5];
+      const len = Math.hypot(B[0] - A[0], B[1] - A[1]), ux = (B[0] - A[0]) / len, uy = (B[1] - A[1]) / len;
+      const px = uy, py = -ux, H = [15, 7.5];
+      const frost = ["3,4", "6,1", "21,12", "22,8", "1,9"];
+      for (let y = 0; y < 24; y++) {
+        let row = "";
+        for (let x = 0; x < 24; x++) {
+          let ch = ".";
+          const t = (x - A[0]) * ux + (y - A[1]) * uy, dist = Math.abs((x - A[0]) * px + (y - A[1]) * py);
+          if (t >= 0 && t <= len && dist < 1.1) ch = (Math.floor(t) % 3 === 0 && t < len - 6) ? "e" : "E";
+          const vx = x - H[0], vy = y - H[1], out = vx * px + vy * py, side = vx * ux + vy * uy;
+          if (out > 0.6 && out < 8.2 && Math.abs(side) < 2 + out * 0.55) {
+            ch = out > 7.2 ? "b" : out > 6 ? "w" : out > 3 ? "W" : "g";
+            if (out > 3.4 && out < 5.4 && Math.abs(side) < 2.4 && (x + y) % 2 === 0) ch = "B";
+          }
+          if (Math.hypot(x - A[0], y - A[1]) < 1.6) ch = "G";
+          if (frost.includes(x + "," + y)) ch = "b";
+          row += ch;
+        }
+        rows.push(row);
+      }
+      return rows;
+    },
+    // ---- Up Next icons ----
+    // The Witcher 4: chrome "IV". The V's left side is a straight bar like the I; the right side
+    // is a curved, claw-like stroke that tapers to a point at the top
+    witcher4() {
+      const W = 22, H = 18, g = Array.from({ length: H }, () => Array(W).fill(false));
+      const set = (x, y) => { x = Math.round(x); y = Math.round(y); if (x >= 0 && y >= 0 && x < W && y < H) g[y][x] = true; };
+      const grad = "HHHAAAAQQQQZZtttTT";
+      // I: stem with pointed serifs
+      for (let y = 1; y <= 16; y++) for (let x = 3; x <= 5; x++) set(x, y);
+      for (let x = 1; x <= 7; x++) { set(x, 1); set(x, 16); }
+      set(1, 0); set(7, 0); set(1, 17); set(7, 17);
+      // V, left side: a straight bar parallel to the I, same serif on top
+      for (let y = 1; y <= 16; y++) for (let x = 9; x <= 11; x++) set(x, y);
+      for (let x = 8; x <= 12; x++) set(x, 1);
+      set(8, 0); set(10, 17);
+      // V, right side: a curve from the top right sweeping down into the foot of the left bar
+      for (let i = 0; i <= 200; i++) {
+        const t = i / 200, u = 1 - t;
+        const x = u * u * 20.5 + 2 * u * t * 20.5 + t * t * 11.5;
+        const y = u * u * 0.5 + 2 * u * t * 12 + t * t * 16;
+        const r = 0.3 + 0.95 * Math.min(1, t * 2);   // sharp at the top, thick toward the bottom
+        for (let dx = -2; dx <= 2; dx++) for (let dy = -2; dy <= 2; dy++) if (Math.hypot(dx, dy) <= r) set(x + dx, y + dy);
+      }
+      return g.map((row, y) => row.map(on => on ? grad[y] : ".").join(""));
+    },
+
+    // Tomb Raider: the original Lara, with round sunglasses, a long braid and a teal tank top
+    // (round amber-orange sunglasses)
+    tombRaider: [
+      "......aaaaa.......",
+      "....aaEEEEEaa.....",
+      "...aEEeeeeeEEa....",
+      "..aEeeeeeeeeeEa...",
+      "..aEeEsssssEeEa...",
+      "..aEEssssssssEa...",
+      "..aEooossooosEa...",
+      "..aEoyoosoyoosa...",
+      "..aEsoossssoosaa..",
+      "...asssssssssa.aa.",
+      "....ssssRRsssa..a.",
+      ".....sssssss.....a",
+      "......sssss.....aa",
+      "...ttTsssssTtt..a.",
+      "..ttttTsssTtttt.a.",
+      ".ttttttttttttttta.",
+      ".tTttttttttttttTt.",
+      ".ttttttttttttttt.."
+    ],
+
+    // Phantom Blade Zero: a white zero cut through by a long blade-like slash
+    phantomBlade() {
+      // the zero: a clean two-pixel ring, lit on the left, shaded on the right
+      const ring = [
+        "................",
+        "................",
+        ".....wwwwww.....",
+        "....wwwwwwww....",
+        "...ww......gg...",
+        "..ww........gg..",
+        "..ww........gg..",
+        "..ww........gg..",
+        "..ww........gg..",
+        "..ww........gg..",
+        "..ww........gg..",
+        "..ww........gg..",
+        "..ww........gg..",
+        "...ww......gg...",
+        "....wwwwwwgg....",
+        ".....wwwwgg.....",
+        "................",
+        "................"
+      ].map(r => [...r]);
+      // the slash: one thin blade stroke from bottom left to top right, past the ring
+      for (let y = 0; y < 18; y++) {
+        const x = Math.round(14 - (13 * y) / 17);
+        ring[y][x] = y === 0 ? "r" : y <= 2 ? "W" : "w";       // a red glint on the tip
+      }
+      return ring.map(r => r.join(""));
+    },
+
+    // GTA VI: bold "VI" in a Vice City sunset, purple rim, gold top edge
+    gta6() {
+      const W = 24, H = 18;
+      const grad = "YYvvvvPPPPpppFFFyy";
+      const inV = (x, y) => {
+        if (y < 1 || y > 16) return false;
+        const t = (y - 1) / 15, X = x + 0.5, l = 0.3 + t * 5.4, r = 14.7 - t * 5.4;
+        if (X < l || X > r) return false;
+        if (y >= 12 && Math.abs(X - 7.5) > (17 - y) * 0.95) return false; // taper into a point at the bottom
+        // a short notch at the top between the two thick arms
+        const notch = 1.8 * (1 - (y - 1) / 6);
+        return !(y < 7 && Math.abs(X - 7.5) < notch);
+      };
+      const inI = (x, y) => y >= 1 && y <= 16 && x >= 16 && x <= 22;
+      const mask = (x, y) => inV(x, y) || inI(x, y);
+      const rows = [];
+      for (let y = 0; y < H; y++) {
+        let row = "";
+        for (let x = 0; x < W; x++) {
+          let ch = ".";
+          if (mask(x, y)) {
+            const side = !mask(x - 1, y) || !mask(x + 1, y) || !mask(x, y + 1);
+            ch = y === 1 ? "Y" : side ? "u" : grad[y];
+            // faint palm fronds in the upper half of both letters
+            if (!side && ((x === 19 && y >= 4 && y <= 10) || (y === 4 && x >= 18 && x <= 20) || (y === 5 && (x === 18 || x === 20)) ||
+                          (x === 4 && y >= 5 && y <= 9) || (y === 5 && x >= 3 && x <= 5))) ch = "P";
+          }
+          row += ch;
+        }
+        rows.push(row);
+      }
+      return rows;
+    },
+
+    // God of War Laufey: the gold raven emblem, wings raised, braided body and a blue gem
+    laufey: [
+      "..y................y..",
+      ".yY.y............y.Yy.",
+      ".yYyY.y........y.YyYy.",
+      ".yYYYyY.y....y.YyYYYy.",
+      "..yYYYYyY....YyYYYYy..",
+      "..yYYYYYYy..yYYYYYYy..",
+      "...yYYYYYYyyyyYYYYy...",
+      "...oyYYYYyDYYYyYYYo...",
+      "....oyYYyDkDYYYyYo....",
+      ".....oyyYYDYYDDYyo....",
+      "......oYYYYYYDDYo.....",
+      ".......oYDYYDYYo......",
+      "........YYDDYYo.......",
+      "........oYDYDYo.......",
+      ".........YYbBYo.......",
+      ".........oYBBo........",
+      "..........oYo.........",
+      "...........o.........."
+    ],
+    // Assassin's Creed Hexe: the Creed sigil tied from sticks, like a witch's totem
+    hexe() {
+      const W = 20, H = 22, g = Array.from({ length: H }, () => Array(W).fill("."));
+      const line = (x0, y0, x1, y1, ch) => {
+        const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
+        for (let i = 0; i <= n; i++) {
+          const x = Math.round(x0 + (x1 - x0) * i / n), y = Math.round(y0 + (y1 - y0) * i / n);
+          if (x >= 0 && y >= 0 && x < W && y < H) g[y][x] = ch;
+        }
+      };
+      // the two legs: two sticks each, bowing out a little toward the bottom
+      line(10, 1, 5, 11, "S"); line(5, 11, 3, 17, "S"); line(11, 2, 6, 12, "C"); line(6, 12, 4, 16, "C");
+      line(10, 1, 15, 11, "S"); line(15, 11, 17, 17, "S"); line(9, 2, 14, 12, "C"); line(14, 12, 16, 16, "C");
+      // the feet hook in toward the middle, leaving the gap at the bottom of the sigil
+      line(3, 17, 4, 19, "S"); line(4, 19, 6, 20, "S"); line(6, 20, 9, 20, "S"); line(5, 18, 8, 19, "C");
+      line(17, 17, 16, 19, "S"); line(16, 19, 13, 20, "S"); line(15, 18, 13, 19, "C");
+      // stray sticks: crossed at the peak and poking out at the feet
+      line(8, 0, 12, 4, "S"); line(13, 0, 9, 4, "C");
+      line(1, 14, 3, 18, "C"); line(0, 20, 3, 19, "S"); line(7, 21, 9, 19, "C");
+      line(19, 14, 17, 18, "C"); line(19, 20, 17, 19, "S"); line(11, 21, 12, 19, "C");
+      return g.map(r => r.join(""));
+    },
+    // Clair Obscur: Expedition 33: the Paintress's monolith with its painted number, falling petals
+    monolith: [
+      "...........XX...........",
+      "..........GXXX..........",
+      ".........GXXXXX.........",
+      "........GXXXXXXX........",
+      ".......GXXXXXXXXX.......",
+      "...rR..GXXXXXXXXX.......",
+      ".......GXXXXXXXXX...Rr..",
+      ".......GXXXXXXXXX.......",
+      ".......GwwwXXwwwX.......",
+      ".......GXXwXXXXwX.......",
+      ".......GXwwXXXwwX.......",
+      ".......GXXwXXXXwX.......",
+      ".......GwwwXXwwwX.......",
+      ".......GXXXXXXXXX.......",
+      "..Rr...GXXXXXXXXX.......",
+      ".......GXXXXXXXXX..rR...",
+      ".......GXXXXXXXXX.......",
+      ".......GXXXXXXXXX.......",
+      "....r..GXXXXXXXXX.......",
+      ".......GXXXXXXXXX....r..",
+      "......GXXXXXXXXXXX......",
+      ".....GGGGGGGGGGGGGG.....",
+      "....GGGGGGGGGGGGGGGG...."
+    ]
+  };
+
+  const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+
+  // Draw each sprite with an automatic 1px dark outline
+  function paint(c) {
+    const src = SPRITES[c.dataset.sprite];
+    const rows = typeof src === "function" ? src() : src;
+    const w = Math.max(...rows.map(r => r.length)) + 2, h = rows.length + 2;
+    c.width = w; c.height = h;
+    if (!c.hasAttribute("aria-label")) c.setAttribute("aria-hidden", "true");
+    const filled = (x, y) => { const ch = (rows[y - 1] || "")[x - 1]; return !!(ch && PAL[ch]); };
+    const ctx = c.getContext("2d"), img = ctx.createImageData(w, h), d = img.data;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      let rgb = null;
+      if (filled(x, y)) rgb = hex(PAL[rows[y - 1][x - 1]]);
+      else if (filled(x - 1, y) || filled(x + 1, y) || filled(x, y - 1) || filled(x, y + 1)) rgb = OUTLINE;
+      if (rgb) { const i = (y * w + x) * 4; d[i] = rgb[0]; d[i + 1] = rgb[1]; d[i + 2] = rgb[2]; d[i + 3] = 255; }
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+  document.querySelectorAll("canvas[data-sprite]").forEach(paint);
+  function sprite(name, style) {
+    const c = document.createElement("canvas");
+    c.className = "sprite"; c.dataset.sprite = name;
+    if (style) c.style.cssText = style;
+    paint(c);
+    return c;
+  }
+
+  // Hero scene: dithered sunset sky, sun and shaded mountain layers
+  const BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
+  function drawScene() {
+    const cv = document.getElementById("scene");
+    const W = Math.ceil(cv.clientWidth / 3), H = Math.ceil(cv.clientHeight / 3);
+    if (!W || !H) return;
+    cv.width = W; cv.height = H;
+    const ctx = cv.getContext("2d"), img = ctx.createImageData(W, H), d = img.data;
+    const put = (x, y, rgb) => { const i = (y * W + x) * 4; d[i] = rgb[0]; d[i + 1] = rgb[1]; d[i + 2] = rgb[2]; d[i + 3] = 255; };
+    const dith = (x, y, f) => f * 16 > BAYER[y & 3][x & 3];
+    const ramp = (stops, t, x, y) => {
+      const p = Math.min(Math.max(t, 0), .9999) * (stops.length - 1), i = Math.floor(p);
+      return stops[Math.round(p)]; // hard color bands, no blending
+    };
+
+    const sky = ["#0b0a2a", "#1d1150", "#3e1872", "#7a1f7e", "#c2346b", "#ff7a45", "#ffc36b"].map(hex);
+    const sunCols = ["#fff3b0", "#ffd25a", "#ff9a3c", "#ff5f6d"].map(hex);
+    const sunX = W * .72, sunY = H * .6, sunR = Math.max(H * .17, 18);
+    let seed = 11;
+    const rand = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const dx = x - sunX, dy = y - sunY, dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < sunR) put(x, y, ramp(sunCols, (dy + sunR) / (2 * sunR), x, y));
+      else put(x, y, ramp(sky, y / (H * .8), x, y));
+    }
+    for (let i = 0; i < W * .5; i++) {
+      const x = Math.floor(rand() * W), y = Math.floor(rand() * H * .45), big = rand() > .9;
+      put(x, y, hex(rand() > .75 ? "#ffe9a8" : "#ffffff"));
+      if (big && x > 0 && x < W - 1 && y > 0) { put(x - 1, y, hex("#9a8fd8")); put(x + 1, y, hex("#9a8fd8")); put(x, y - 1, hex("#9a8fd8")); }
+    }
+
+    const layers = [
+      { base: .62, amp: .1, f: .021, ridge: "#8a4fb0", hi: "#5a2c86", lo: "#2e1658" },
+      { base: .72, amp: .09, f: .034, ridge: "#5a3a9c", hi: "#2f1a66", lo: "#170b3a" },
+      { base: .84, amp: .07, f: .05, ridge: "#3a2a70", hi: "#150c34", lo: "#07051a" }
+    ];
+    layers.forEach((L, li) => {
+      const ridge = hex(L.ridge), cols = [hex(L.hi), hex(L.lo)];
+      for (let x = 0; x < W; x++) {
+        const top = Math.floor(H * L.base + Math.sin(x * L.f + li * 2.3) * H * L.amp
+          + Math.sin(x * L.f * 2.7 + li) * H * L.amp * .45 + Math.sin(x * L.f * 7.1) * H * .012);
+        for (let y = Math.max(top, 0); y < H; y++) {
+          put(x, y, y === top ? ridge : cols[0]);
+        }
+      }
+    });
+    ctx.putImageData(img, 0, 0);
+  }
+  drawScene();
+  let rT; addEventListener("resize", () => { clearTimeout(rT); rT = setTimeout(drawScene, 120); });
+
+  let toastTimer;
+  function toast(text, title = "ACHIEVEMENT UNLOCKED") {
+    const t = document.getElementById("toast");
+    t.querySelector(".t1").textContent = title;
+    document.getElementById("toastText").textContent = text;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 2800);
+  }
+
+  // Skill meters: turn each bar into 20 cells (5 points each)
+  const CELLS = 20, LOW = 35;
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document.querySelectorAll(".bar").forEach(bar => {
+    const value = +bar.querySelector("i").dataset.w;
+    bar.dataset.w = value;
+    bar.innerHTML = "";
+    for (let i = 0; i < CELLS; i++) {
+      const cell = document.createElement("span");
+      cell.className = "cell"; cell.style.setProperty("--i", i);
+      bar.appendChild(cell);
+    }
+    if (value < LOW) { bar.classList.add("low"); bar.closest(".stat").classList.add("low"); }
+    bar.setAttribute("role", "meter");
+    bar.setAttribute("aria-valuemin", 0); bar.setAttribute("aria-valuemax", 100); bar.setAttribute("aria-valuenow", value);
+  });
+  // Light the cells one at a time, like a health bar filling up
+  function fillBar(bar, value) {
+    const cells = bar.querySelectorAll(".cell"), n = Math.round(value / (100 / CELLS));
+    (bar._timers || []).forEach(clearTimeout); // a newer fill always wins
+    bar._timers = [];
+    cells.forEach((c, i) => {
+      const on = () => { c.classList.toggle("on", i < n); c.classList.toggle("tip", i === n - 1); };
+      reduceMotion ? on() : bar._timers.push(setTimeout(on, i * 45));
+    });
+  }
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.querySelectorAll(".bar").forEach(b => fillBar(b, +b.dataset.w));
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: .2 });
+  io.observe(document.querySelector("#profile .stats"));
+
+  // Platinum counter: counts 0 → 19 when scrolled into view, lighting a trophy per tick
+  const PLATS = 19, platNum = document.getElementById("platNum"), shelf = document.getElementById("platShelf");
+  const shelfCups = Array.from({ length: PLATS }, () => shelf.appendChild(sprite("plat")));
+  const platIo = new IntersectionObserver(entries => {
+    if (!entries[0].isIntersecting) return;
+    platIo.disconnect();
+    if (reduceMotion) { platNum.textContent = PLATS; shelfCups.forEach(c => c.classList.add("lit")); return; }
+    let n = 0;
+    const tick = setInterval(() => {
+      n++;
+      platNum.textContent = n;
+      platNum.classList.remove("pop"); void platNum.offsetWidth; platNum.classList.add("pop");
+      shelfCups[n - 1].classList.add("lit");
+      if (n >= PLATS) clearInterval(tick);
+    }, 110);
+  }, { threshold: .4 });
+  platIo.observe(document.querySelector(".plat-card"));
+
+  // Up Next: badges with a release date count down to the moment it unlocks in Israel
+  // (midnight Israel time on release day; the offset is written into each date, so every viewer
+  // sees the same countdown) as WEEKS : DAYS : HOURS : MINUTES : SECONDS, and flip to ALREADY OUT.
+  // The digits are padded so the badge keeps the same width while it ticks.
+  const releaseBadges = [...document.querySelectorAll(".badge[data-release]")];
+  function tickReleases() {
+    const now = Date.now(), pad = n => String(n).padStart(2, "0");
+    for (const b of releaseBadges) {
+      const left = Date.parse(b.dataset.release) - now;
+      if (left <= 0) { b.textContent = "ALREADY OUT"; b.classList.remove("soon"); continue; }
+      const t = Math.floor(left / 1000), days = Math.floor(t / 86400);
+      b.textContent = `${pad(Math.floor(days / 7))}W : ${days % 7}D : ${pad(Math.floor(t / 3600) % 24)}H : ${pad(Math.floor(t / 60) % 60)}M : ${pad(t % 60)}S`;
+    }
+  }
+  tickReleases();
+  setInterval(tickReleases, 1000);
+
+  // Short chiptune fanfare (square wave), played when the cheat fires
+  // Original 8-bit "power-up" sound: a fast rising ladder up a pentatonic scale
+  // (two steps up, one back), a quieter voice a fifth above, then a shimmering top note
+  function fanfare() {
+    try {
+      const ac = new (window.AudioContext || window.webkitAudioContext)();
+      const scale = [220, 262, 294, 330, 392, 440, 523, 587, 659, 784, 880, 1047, 1175, 1319, 1568, 1760];
+      const ladder = [];
+      for (let i = 0; i < scale.length - 1; i += 1) { ladder.push(scale[i], scale[i + 1]); if (i % 2) ladder.push(scale[i]); }
+      const step = 0.028, t0 = ac.currentTime + 0.02;
+      const voice = (type, vol, mult) => {
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.type = type;
+        ladder.forEach((f, i) => o.frequency.setValueAtTime(f * mult, t0 + i * step));
+        const end = t0 + ladder.length * step;
+        // shimmer: wobble the final note quickly between two pitches
+        for (let k = 0; k < 10; k++) o.frequency.setValueAtTime(1760 * mult * (k % 2 ? 1.06 : 1), end + k * 0.035);
+        g.gain.setValueAtTime(vol, t0);
+        g.gain.setValueAtTime(vol * 0.7, end);
+        g.gain.linearRampToValueAtTime(0, end + 0.38);
+        o.connect(g); g.connect(ac.destination);
+        o.start(t0); o.stop(end + 0.4);
+      };
+      voice("square", 0.05, 1);
+      voice("triangle", 0.035, 1.5);
+    } catch (e) { /* no audio available */ }
+  }
+
+  // Original "level complete" jingle for reaching the top: a light-switch clunk as the lights
+  // come on, a quick rising arpeggio, two chord stabs, then a held chord that shimmers and fades,
+  // with a triangle-wave bass underneath
+  function victoryJingle() {
+    try {
+      const ac = new (window.AudioContext || window.webkitAudioContext)();
+      const t0 = ac.currentTime + 0.03;
+      const note = (type, freq, at, dur, vol, vibrato = 0) => {
+        const o = ac.createOscillator(), g = ac.createGain(), start = t0 + at;
+        o.type = type; o.frequency.setValueAtTime(freq, start);
+        if (vibrato) {
+          const lfo = ac.createOscillator(), depth = ac.createGain();
+          lfo.frequency.value = 7; depth.gain.value = freq * vibrato;
+          lfo.connect(depth); depth.connect(o.frequency);
+          lfo.start(start); lfo.stop(start + dur + 0.05);
+        }
+        g.gain.setValueAtTime(vol, start);
+        g.gain.setValueAtTime(vol, start + dur * 0.7);
+        g.gain.linearRampToValueAtTime(0, start + dur);
+        o.connect(g); g.connect(ac.destination);
+        o.start(start); o.stop(start + dur + 0.02);
+      };
+      // the clunk: a short burst of noise and a thump dropping in pitch
+      const len = Math.floor(ac.sampleRate * 0.05), buf = ac.createBuffer(1, len, ac.sampleRate), data = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+      const noise = ac.createBufferSource(), lp = ac.createBiquadFilter(), ng = ac.createGain();
+      noise.buffer = buf; lp.type = "lowpass"; lp.frequency.value = 1800; ng.gain.value = 0.18;
+      noise.connect(lp); lp.connect(ng); ng.connect(ac.destination); noise.start(t0);
+      const thump = ac.createOscillator(), tg = ac.createGain();
+      thump.type = "square"; thump.frequency.setValueAtTime(110, t0); thump.frequency.exponentialRampToValueAtTime(45, t0 + 0.09);
+      tg.gain.setValueAtTime(0.08, t0); tg.gain.linearRampToValueAtTime(0, t0 + 0.1);
+      thump.connect(tg); tg.connect(ac.destination); thump.start(t0); thump.stop(t0 + 0.12);
+      // the rising arpeggio
+      [523, 659, 784, 1047, 1319].forEach((f, i) => note("square", f, 0.2 + i * 0.07, 0.09, 0.045));
+      // two stabs, then the held chord
+      const stab = (at, freqs, dur, vib) => freqs.forEach((f, i) => note(i ? "triangle" : "square", f, at, dur, i ? 0.035 : 0.045, vib));
+      stab(0.62, [784, 988, 1175], 0.13);
+      stab(0.82, [880, 1047, 1319], 0.13);
+      stab(1.02, [988, 1175, 1568], 0.95, 0.012);
+      // bass line
+      [[131, 0.2, 0.36], [98, 0.62, 0.16], [110, 0.82, 0.16], [196, 1.02, 0.95]].forEach(([f, at, dur]) => note("triangle", f, at, dur, 0.09));
+    } catch (e) { /* no audio available */ }
+  }
+
+  // ---------- Zuk Mode (cheat code) ----------
+  // Stagger the portrait rows so the color cycle ripples down the face
+  document.querySelectorAll(".photo svg > rect, .photo svg > path").forEach((el, i) => el.style.setProperty("--i", i));
+
+  // Pixel fireworks that burst out of the cursor
+  const FW_SCALE = 3, FW_COLORS = ["#ff4a5e", "#ff9a1f", "#ffd34d", "#2fe08a", "#4fb8ff", "#ff7ad9", "#ffffff"];
+  let fw = null; // { canvas, ctx, particles, raf, spawnTimer }
+  const pointer = { x: innerWidth / 2, y: innerHeight / 2 };
+  function trackPointer(e) {
+    const p = e.touches ? e.touches[0] : e;
+    if (p) { pointer.x = p.clientX; pointer.y = p.clientY; }
+  }
+  function burst(x, y, big) {
+    if (!fw) return;
+    const color = FW_COLORS[Math.floor(Math.random() * FW_COLORS.length)];
+    const n = big ? 48 : 22 + Math.floor(Math.random() * 12);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + Math.random() * 0.3, s = (big ? 1.2 : 0.7) + Math.random() * 0.9;
+      fw.particles.push({ x: x / FW_SCALE, y: y / FW_SCALE, vx: Math.cos(a) * s, vy: Math.sin(a) * s,
+        life: 38 + Math.random() * 30, age: 0, color });
+    }
+    if (fw.particles.length > 900) fw.particles.splice(0, fw.particles.length - 900);
+  }
+  function fireworksFrame() {
+    const { ctx, canvas } = fw;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    fw.particles = fw.particles.filter(p => p.age < p.life);
+    for (const p of fw.particles) {
+      p.age++; p.vy += 0.035; p.vx *= 0.985; p.vy *= 0.985; p.x += p.vx; p.y += p.vy;
+      const left = 1 - p.age / p.life;
+      // sparks turn white as they fade, and twinkle near the end
+      ctx.fillStyle = left < 0.3 ? "#ffffff" : p.color;
+      if (left < 0.2 && Math.random() < 0.4) continue;
+      ctx.fillRect(Math.round(p.x), Math.round(p.y), 1, 1);
+    }
+    fw.raf = requestAnimationFrame(fireworksFrame);
+  }
+  function sizeFireworks() {
+    if (!fw) return;
+    fw.canvas.width = Math.ceil(innerWidth / FW_SCALE); fw.canvas.height = Math.ceil(innerHeight / FW_SCALE);
+  }
+  function clickBurst(e) { trackPointer(e); burst(pointer.x, pointer.y, true); }
+  function startFireworks() {
+    if (fw || reduceMotion) return;
+    const canvas = document.createElement("canvas");
+    canvas.className = "fireworks"; canvas.setAttribute("aria-hidden", "true");
+    document.body.appendChild(canvas);
+    fw = { canvas, ctx: canvas.getContext("2d"), particles: [] };
+    sizeFireworks();
+    addEventListener("resize", sizeFireworks);
+    addEventListener("pointermove", trackPointer, { passive: true });
+    addEventListener("touchstart", trackPointer, { passive: true });
+    addEventListener("pointerdown", clickBurst);
+    fw.spawnTimer = setInterval(() => burst(pointer.x, pointer.y, false), 380);
+    burst(pointer.x, pointer.y, true);
+    fw.raf = requestAnimationFrame(fireworksFrame);
+  }
+  function stopFireworks() {
+    if (!fw) return;
+    cancelAnimationFrame(fw.raf); clearInterval(fw.spawnTimer);
+    removeEventListener("resize", sizeFireworks);
+    removeEventListener("pointermove", trackPointer);
+    removeEventListener("touchstart", trackPointer);
+    removeEventListener("pointerdown", clickBurst);
+    fw.canvas.remove(); fw = null;
+  }
+
+  // Short, slight glitches every couple of seconds
+  let glitchTimer = null;
+  function glitchOnce() {
+    const big = Math.random() < 0.4;
+    const bars = document.createElement("div"); bars.className = "glitch-bars"; bars.setAttribute("aria-hidden", "true");
+    const tints = ["#ff2bd6", "#2bffe6", "#ffffff", "#ffd34d", "#000000"];
+    const pick = () => tints[Math.floor(Math.random() * tints.length)];
+    // full-width noise lines
+    for (let i = 0, n = (big ? 7 : 4) + Math.floor(Math.random() * 4); i < n; i++) {
+      const b = document.createElement("i");
+      b.style.top = Math.random() * 100 + "%";
+      b.style.height = 2 + Math.floor(Math.random() * 7) * 2 + "px";
+      b.style.background = pick();
+      b.style.transform = `translateX(${(Math.random() - 0.5) * 80}px)`;
+      bars.appendChild(b);
+    }
+    // corrupted pixel blocks
+    for (let i = 0, n = big ? 6 : 2; i < n; i++) {
+      const b = document.createElement("i"); b.className = "block";
+      b.style.top = Math.random() * 100 + "%"; b.style.left = Math.random() * 90 + "%";
+      b.style.width = 20 + Math.random() * 140 + "px"; b.style.height = 6 + Math.random() * 30 + "px";
+      b.style.background = pick();
+      bars.appendChild(b);
+    }
+    document.body.appendChild(bars);
+    document.body.classList.add("glitching");
+    // big glitch: a random section tears sideways and shifts color
+    let torn = null;
+    if (big) {
+      const parts = [...document.querySelectorAll("body > header, body > section, body > footer")];
+      torn = parts[Math.floor(Math.random() * parts.length)];
+      torn.classList.add("glitch-tear");
+    }
+    setTimeout(() => {
+      bars.remove(); document.body.classList.remove("glitching");
+      if (torn) torn.classList.remove("glitch-tear");
+    }, big ? 320 : 220);
+  }
+  function scheduleGlitch() {
+    glitchTimer = setTimeout(() => { glitchOnce(); scheduleGlitch(); }, 500 + Math.random() * 1000);
+  }
+
+  function zukMode() {
+    const already = document.body.classList.contains("zuk-mode");
+    fanfare();
+    document.body.classList.add("zuk-mode");
+
+    // Big announcement
+    const banner = document.getElementById("cheat");
+    banner.classList.add("show");
+    setTimeout(() => banner.classList.remove("show"), 2600);
+    setTimeout(() => toast("Zuk Mode on"), 2800);
+
+    if (reduceMotion) return;
+    if (!already) { startFireworks(); scheduleGlitch(); }
+    // Screen flash and shake
+    const flash = document.createElement("div"); flash.className = "flash";
+    document.body.appendChild(flash); setTimeout(() => flash.remove(), 600);
+    document.body.classList.remove("shake"); void document.body.offsetWidth; document.body.classList.add("shake");
+    // Rain of pixel loot
+    const rain = document.createElement("div"); rain.className = "rain";
+    // every icon shown on the page (except the empty heart), so new icons join the rain automatically
+    const loot = [...new Set([...document.querySelectorAll("canvas[data-sprite]")].map(c => c.dataset.sprite))]
+      .filter(name => name !== "heartEmpty");
+    for (let i = 0; i < 70; i++) {
+      const size = 24 + Math.floor(Math.random() * 4) * 8;
+      const c = sprite(loot[i % loot.length], `width:${size}px;height:${size}px;left:${Math.random() * 100}%`);
+      c.style.setProperty("--d", (1.8 + Math.random() * 2) + "s");
+      c.style.setProperty("--delay", (Math.random() * 1.4) + "s");
+      c.style.setProperty("--r", (Math.random() > .5 ? 1 : -1) * 360 + "deg");
+      rain.appendChild(c);
+    }
+    document.body.appendChild(rain);
+    setTimeout(() => rain.remove(), 5500);
+  }
+
+  function exitZukMode() {
+    document.body.classList.remove("zuk-mode", "glitching", "shake");
+    document.querySelectorAll(".glitch-tear").forEach(el => el.classList.remove("glitch-tear"));
+    clearTimeout(glitchTimer); glitchTimer = null;
+    document.querySelectorAll(".glitch-bars, .rain, .flash").forEach(el => el.remove());
+    stopFireworks();
+    document.getElementById("cheat").classList.remove("show");
+    toast("Zuk Mode off", "BACK TO NORMAL");
+  }
+  document.getElementById("dismiss").addEventListener("click", e => { e.stopPropagation(); exitZukMode(); });
+
+  // Trigger 1: Konami code on a keyboard
+  const code = ["ArrowUp","ArrowUp","ArrowDown","ArrowDown","ArrowLeft","ArrowRight","ArrowLeft","ArrowRight","b","a"];
+  let pos = 0;
+  document.addEventListener("keydown", e => {
+    pos = e.key === code[pos] ? pos + 1 : (e.key === code[0] ? 1 : 0);
+    if (pos === code.length) { pos = 0; zukMode(); }
+  });
+  // Trigger 2: tap the controller in the top bar 5 times quickly
+  let taps = 0, tapTimer;
+  document.getElementById("logoPad").addEventListener("click", () => {
+    taps++; clearTimeout(tapTimer); tapTimer = setTimeout(() => taps = 0, 1500);
+    if (taps >= 5) { taps = 0; zukMode(); }
+  });
+
+  // ---------- Div Climber: the whole page is the level ----------
+  // The page is stacked upside down: you start at PRESS START at the bottom and climb up
+  // through every section to the footer at the very top.
+  (() => {
+    const $ = id => document.getElementById(id);
+    const extraEl = $("mgExtra");
+    const hasMouse = matchMedia("(hover: hover) and (pointer: fine)");
+
+    // Effects canvas: the hero, the section lines, dust and confetti
+    const fx = document.createElement("canvas");
+    fx.className = "fx-layer"; fx.setAttribute("aria-hidden", "true");
+    document.body.appendChild(fx);
+    const ctx = fx.getContext("2d");
+    const sizeFx = () => { fx.width = innerWidth; fx.height = innerHeight; };
+    sizeFx(); addEventListener("resize", sizeFx);
+    const drawRows = (rows, colors, x, y, scale) => rows.forEach((row, ry) => [...row].forEach((ch, rx) => {
+      if (!colors[ch]) return;
+      ctx.fillStyle = colors[ch]; ctx.fillRect(x + rx * scale, y + ry * scale, scale, scale);
+    }));
+    let particles = [];
+
+    // The page is dark: only a pixel-stepped halo of light around the hero shows it.
+    // Drawn at 1/6 resolution and scaled up, so the light falls off in chunky pixels.
+    const DARK_PX = 6, BANDS = 5, DARKNESS = 0.92;
+    const dark = document.createElement("canvas"), dctx = dark.getContext("2d");
+    let darkImg = null, lightUp = 0; // lightUp: 0 = dark, 1 = the lights come on (after reaching the top)
+    const navEl = document.querySelector("nav");
+    function drawDarkness(hx, hy) {
+      if (lightUp >= 1) return; // lights fully on: the whole page is visible
+      const top = Math.round(navEl.getBoundingClientRect().bottom); // the top bar stays lit
+      const w = Math.ceil(innerWidth / DARK_PX), h = Math.ceil((innerHeight - top) / DARK_PX);
+      if (w <= 0 || h <= 0) return;
+      if (!darkImg || darkImg.width !== w || darkImg.height !== h) { dark.width = w; dark.height = h; darkImg = dctx.createImageData(w, h); }
+      const d = darkImg.data, t = performance.now() / 1000;
+      const flicker = 1 + Math.sin(t * 7) * 0.015 + Math.sin(t * 13.3) * 0.01; // a gentle torch flicker
+      const halo = Math.min(240, Math.max(150, innerWidth * 0.42));
+      const R = (halo + lightUp * Math.hypot(innerWidth, innerHeight)) * flicker / DARK_PX, core = R * 0.4;
+      const cx = hx / DARK_PX, cy = (hy - top) / DARK_PX;
+      // as the lights come on, the halo spreads out and the darkness fades everywhere
+      const darkness = DARKNESS * (1 - lightUp);
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        const dist = Math.hypot(x + 0.5 - cx, y + 0.5 - cy);
+        let a = darkness;
+        if (dist < R) {
+          // stepped bands with an ordered dither at each edge, like the hero's sunset
+          const v = Math.max(0, (dist - core) / (R - core)) * BANDS + (BAYER[y & 3][x & 3] / 16 - 0.5);
+          a = Math.max(0, Math.min(BANDS, Math.floor(v))) / BANDS * darkness;
+        }
+        const i = (y * w + x) * 4;
+        d[i] = 3; d[i + 1] = 2; d[i + 2] = 14; d[i + 3] = a * 255;
+      }
+      dctx.putImageData(darkImg, 0, 0);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(dark, 0, top, w * DARK_PX, h * DARK_PX);
+    }
+    let heroX = 0, heroY = 0; // the hero's center on screen, for the halo
+
+    // A platformer on the page itself. Platforms: every line of visible text, the tops of cards,
+    // buttons and badges, and the white lines between sections. Icons are solid blocks: you can
+    // stand on them and they stop you like walls. The cards slide side to side, and the goal is the
+    // footer at the very top. Running faster jumps higher, fast mid-air wall hits bounce
+    // you back up, and there's a double jump. No fail state: a fall lands on the floor.
+    const S = 3, W = 12 * S, H = 14 * S;
+    const IDLE = SPRITES.climber;
+    const RUN_A = [...IDLE.slice(0, 8), ".sBBBnBBB...", "..BBBnBBBs..", "..BBBBBBB...", "..GGGGGGG...", ".GGG...GGG..", "kww.....kww."];
+    const RUN_B = [...IDLE.slice(0, 8), "..BBBnBBBs..", ".sBBBnBBB...", "..BBBBBBB...", "..GGGGGGG...", "...GGGGG....", "...kwwww...."];
+    const JUMP = [...IDLE.slice(0, 6), "s..sssss..s.", "sBBBBBBBBBs.", "..BBBnBBB...", "..BBBnBBB...", "..BBBBBBB...", "..GGGGGGG...", "..GG...GG...", ".kww...kww.."];
+    // things with a visible outline are platforms (card tops, buttons, badges, skill bars); text is added separately
+    const PLAT_SEL = "header .win, header .btn, section .win, section .badge, section .bar";
+    const MOVE_SEL = "header .intro, section .win.card, section .plat-card, section .fav";
+    const SOLID_SEL = "section canvas.sprite, section .photo svg"; // icons: floor and wall
+    const GRAV = 0.6, MAX_FALL = 18, MAX_RUN = 10;
+    const WALL_BOUNCE_SPEED = 6; // mid-air speed needed to bounce off a wall
+    const IDLE_FIRST = [120, 360]; // standing still 2-6 seconds starts an idle animation
+    const IDLE_GAP = [60, 300];    // then a 1-5 second break before the next one
+    const between = ([a, b]) => a + Math.random() * (b - a);
+    const INSET = 5;             // the sprite's empty margin, so collisions use the visible body
+    const LOOK_MS = 2500;        // scrolling by hand pauses the camera this long, so you can look around
+    const keys = { left: false, right: false, down: false, jump: false, pressed: false };
+    let p = null, plats = [], movers = [], solids = [], textLines = [], btn = null, footer = null;
+    let won = false, warped = false, frameNo = 0, startTime = 0, lookUntil = 0;
+    // Barrels roll along the section lines near you, from one screen edge, and fall away through
+    // the gaps. One that hits you knocks you down below that line.
+    const BARREL = [
+      "....XXXX....", "..XXeeeeXX..", ".XeeEeeEeeX.", ".XeeEeeEeeX.", "XeeeEeeEeeeX", "XEEEEEEEEEEX",
+      "XeeeEeeEeeeX", "XeeeEeeEeeeX", ".XeeEeeEeeX.", ".XeeEeeEeeX.", "..XXeeeeXX..", "....XXXX...."
+    ];
+    const BS = 2, BW = 12 * BS;   // barrel size on screen
+    let barrels = [], barrelNext = [];
+    let lastAct = Math.random() < 0.5 ? "nose" : "belly"; // idle animations take turns, so neither repeats
+    const controlsHint = () => hasMouse.matches ? "← → RUN · ↓ DROP · SPACE JUMP ×2" : "◀ ▶ RUN · ▼ DROP · JUMP ×2";
+
+    function onKey(e, isDown) {
+      const k = e.key;
+      if (k !== "ArrowLeft" && k !== "ArrowRight" && k !== "ArrowDown" && k !== " " && k !== "Spacebar") return;
+      e.preventDefault(); // no page scrolling while playing
+      lookUntil = 0;
+      if (k === "ArrowLeft") keys.left = isDown;
+      else if (k === "ArrowRight") keys.right = isDown;
+      else if (k === "ArrowDown") keys.down = isDown;
+      else { if (isDown && !keys.jump) keys.pressed = true; keys.jump = isDown; }
+    }
+    const floorY = () => document.documentElement.scrollHeight - 2;
+    const clock = ms => { const s = Math.floor(ms / 1000); return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); };
+    const puff = (x, y, n) => {
+      for (let i = 0; i < n; i++) particles.push({ x, y, vx: (Math.random() - 0.5) * 3, vy: Math.random() * 1.5, g: 0, life: 14 + Math.random() * 8, max: 22, size: 3, grow: 0.25, fade: 0.7, color: "#d9dbe8" });
+    };
+
+    // The page's blocks (footer, sections, hero) in page order, with their page-y ranges
+    const sectionsOf = () => [...document.querySelectorAll("body > footer, body > section, body > header.hero")]
+      .map(el => { const r = el.getBoundingClientRect(); return { el, top: r.top + scrollY, bottom: r.bottom + scrollY }; });
+
+    // Every line of visible text is a platform, measured character by character so it runs only
+    // from the first to the last real character on the line (no spaces, margins or empty box area).
+    // Measured with the cards at rest; each line remembers which sliding card it's in,
+    // so it moves along with it.
+    const measure = document.createElement("canvas").getContext("2d"), dropCache = new Map();
+    function glyphDrop(cs, ch, boxH, em) {
+      const font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`, key = font + "|" + ch;
+      let v = dropCache.get(key);
+      if (v === undefined) {
+        measure.font = font;
+        const m = measure.measureText(ch);
+        v = m.fontBoundingBoxAscent !== undefined && m.actualBoundingBoxAscent > 0
+          ? Math.max(0, (boxH - (m.fontBoundingBoxAscent + m.fontBoundingBoxDescent)) / 2 + m.fontBoundingBoxAscent - m.actualBoundingBoxAscent)
+          : Math.max(0, (boxH - em) / 2) + em * 0.18; // older browsers: the old estimate
+        dropCache.set(key, v);
+      }
+      return v;
+    }
+    function buildTextLines() {
+      textLines = [];
+      const range = document.createRange();
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+        acceptNode: n => n.textContent.trim() && n.parentElement && n.parentElement.closest("header, section, footer")
+          ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT
+      });
+      const sy = scrollY;
+      for (let n; (n = walker.nextNode());) {
+        const parent = n.parentElement, cs = getComputedStyle(parent);
+        if (cs.visibility === "hidden" || cs.display === "none") continue;
+        const mover = movers.find(m => m.el.contains(parent)) || null;
+        const em = parseFloat(cs.fontSize) || 16;
+        const text = n.textContent;
+        for (let i = 0; i < text.length; i++) {
+          if (/\s/.test(text[i])) continue; // spaces are not platforms
+          range.setStart(n, i); range.setEnd(n, i + 1);
+          const r = range.getBoundingClientRect();
+          if (r.width === 0 || r.height === 0) continue;
+          // stand on the real top of the letter: the browser's text metrics say how far below the
+          // top of the text box the glyph starts (pixel fonts fill the box, VT323 sits lower in it)
+          const top = r.top + glyphDrop(cs, text[i], r.height, em) + sy;
+          // characters on the same line join into one platform; a gap wider than a space splits it
+          const prev = textLines[textLines.length - 1];
+          if (prev && prev.mover === mover && Math.abs(prev.y - top) < em * 0.4 && r.left - prev.x2 <= em * 0.7 && r.left >= prev.x1) {
+            prev.x2 = Math.max(prev.x2, r.right); prev.y = Math.min(prev.y, top);
+          } else textLines.push({ x1: r.left, x2: r.right, y: top, mover });
+        }
+      }
+    }
+    // The boundary between two blocks: a thin white line you can land on, broken by one or two
+    // wide gaps (110-170px) you can fall straight through. Gaps are picked when the level is built.
+    let lineSegs = [];
+    function buildLineGaps(count) {
+      lineSegs = [];
+      for (let i = 0; i < count; i++) {
+        const n = Math.random() < 0.5 ? 1 : 2, zone = innerWidth / n, segs = [];
+        let x = 0;
+        for (let g = 0; g < n; g++) {
+          const w = 110 + Math.random() * 60;
+          const gx = g * zone + 30 + Math.random() * Math.max(0, zone - w - 60); // one gap per zone, away from the edges
+          if (gx > x) segs.push({ x1: x, x2: gx });
+          x = gx + w;
+        }
+        if (x < innerWidth) segs.push({ x1: x, x2: innerWidth });
+        lineSegs.push(segs);
+      }
+    }
+    // (re)measure the level: cards go back to rest first so text is measured where it really sits
+    function buildLevel() {
+      movers.forEach(m => { m.el.style.transform = ""; });
+      buildTextLines();
+      buildLineGaps(sectionsOf().length - 1);
+    }
+    function drawLine(i, y, sy, c) {
+      const vy = Math.round(y - sy);
+      if (vy < -6 || vy > innerHeight + 6) return;
+      ctx.fillStyle = c.edge;
+      for (const s of lineSegs[i] || []) ctx.fillRect(Math.round(s.x1), vy, Math.round(s.x2 - s.x1), 3);
+    }
+    // a wall hit: bounce off if moving fast in mid-air, otherwise just stop
+    function hitWall(x, sy) {
+      if (!p.ground && Math.abs(p.vx) >= WALL_BOUNCE_SPEED) {
+        p.vx = -p.vx * 0.95;
+        p.vy = Math.min(p.vy, -(9 + Math.abs(p.vx) * 0.5));
+        p.face = Math.sign(p.vx); p.spin = true; p.rot = 0;
+        p.doubleUsed = false; // a wall bounce gives the double jump back
+        puff(x, p.y - sy + H / 2, 8);
+      } else p.vx = 0;
+    }
+
+    function win() {
+      won = true;
+      const time = performance.now() - startTime;
+      let best = null;
+      if (!warped) {
+        try { best = +localStorage.getItem("zukClimbBest") || null; if (!best || time < best) { best = time; localStorage.setItem("zukClimbBest", String(Math.round(time))); } } catch (e) { best = time; }
+      }
+      victoryJingle();
+      // lights on: a quick flash, then the darkness fades away from the whole page (see drawDarkness)
+      const flash = document.createElement("div");
+      flash.className = "flash";
+      document.body.appendChild(flash);
+      setTimeout(() => flash.remove(), 500);
+      // let go of the camera so the whole lit page can be scrolled; moving the hero takes it back
+      lookUntil = Infinity;
+      const look = hasMouse.matches ? "SCROLL TO SEE IT ALL" : "SWIPE TO SEE IT ALL";
+      extraEl.innerHTML = warped
+        ? `TOP REACHED! LIGHTS ON.<br>(FAST TRAVEL, NO RECORD)<br>${look}<br>PRESS START TO CLIMB AGAIN`
+        : `TOP REACHED! LIGHTS ON.<br>TIME <b>${clock(time)}</b> · BEST <b>${clock(best)}</b><br>${look}<br>PRESS START TO CLIMB AGAIN`;
+      toast(`Top reached in ${clock(time)}`, "YOU MADE IT!");
+      const cx = p.x + W / 2, cy = p.y - scrollY;
+      const cols = ["#ff4a5e", "#ffd34d", "#2fe08a", "#4fb8ff", "#ff7ad9", "#ffffff"];
+      for (let i = 0; i < 80; i++) {
+        const a = Math.random() * Math.PI * 2, s = 2 + Math.random() * 6;
+        particles.push({ x: cx, y: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 2, g: 0.15, life: 40 + Math.random() * 40, color: cols[i % cols.length] });
+      }
+    }
+
+    // A new run: the hero leaps out of the PRESS START button and drops to the floor
+    function spawn() {
+      const r = btn.getBoundingClientRect();
+      const x = r.left + r.width / 2 - W / 2;
+      const dir = Math.random() < 0.5 ? -1 : 1;
+      // leaps out far enough to land beside the button, not under it
+      p = { x, y: r.top + scrollY + r.height / 2 - H / 2, vx: dir * (r.width / 2 + W) / 34, vy: -11,
+            ground: null, groundX: 0, coyote: 0, buffer: 0, face: dir, spin: true, rot: 0, doubleUsed: true, intro: true, idle: 0, hurt: 0,
+            act: null, actT: 0, actLen: 0, nextAct: between(IDLE_FIRST) };
+      puff(r.left + r.width / 2, r.top + r.height / 2, 14);
+      won = false; warped = false; frameNo = 0; startTime = performance.now(); lookUntil = 0;
+      barrels = []; barrelNext = [];
+      Object.assign(keys, { left: false, right: false, down: false, jump: false, pressed: false });
+      extraEl.innerHTML = `CLIMB TO THE TOP!<br>${controlsHint()}`;
+    }
+    // Fast travel: the nav links drop the hero in at the top of that section
+    function warpTo(el) {
+      const r = el.getBoundingClientRect(), sy = scrollY;
+      p.x = innerWidth / 2 - W / 2; p.y = r.top + sy + 8;
+      p.vx = 0; p.vy = 0; p.ground = null; p.spin = false; p.intro = false; p.idle = 0;
+      warped = true; lookUntil = 0;
+      scrollTo(0, p.y + H / 2 - innerHeight * 0.55);
+      puff(p.x + W / 2, p.y - scrollY + H / 2, 16);
+    }
+
+    function setup() {
+      addEventListener("keydown", e => onKey(e, true), true);
+      addEventListener("keyup", e => onKey(e, false), true);
+      // scrolling by hand (wheel or finger) lets you look around for a moment
+      // (after reaching the top the camera stays free until the hero moves again)
+      const look = () => { if (lookUntil !== Infinity) lookUntil = performance.now() + LOOK_MS; };
+      addEventListener("wheel", look, { passive: true });
+      addEventListener("touchmove", e => { if (!e.target.closest(".pad")) look(); }, { passive: true });
+
+      plats = [...document.querySelectorAll(PLAT_SEL)];
+      btn = document.querySelector("header .btn");
+      footer = document.querySelector("body > footer");
+      // sliding cards: switch off their hover slide animation, or they'd lag behind their platforms
+      movers = [...document.querySelectorAll(MOVE_SEL)].map(el => ({ el, amp: 30 + Math.random() * 50, speed: 0.6 + Math.random() * 0.9, phase: Math.random() * Math.PI * 2, dx: 0 }));
+      movers.forEach(m => { m.el.style.transition = "none"; });
+      solids = [...document.querySelectorAll(SOLID_SEL)];
+      document.documentElement.style.scrollBehavior = "auto";
+      buildLevel();
+
+      btn.addEventListener("click", e => { e.preventDefault(); btn.blur(); spawn(); });
+      document.querySelectorAll('nav a[href^="#"]').forEach(a => a.addEventListener("click", e => {
+        const el = document.querySelector(a.getAttribute("href"));
+        if (!el) return;
+        e.preventDefault(); a.blur(); warpTo(el);
+      }));
+
+      // on-screen buttons for phones and tablets
+      document.querySelectorAll(".pad button").forEach(b => {
+        const k = b.dataset.key;
+        const set = on => {
+          if (k === "jump") { if (on && !keys.jump) keys.pressed = true; keys.jump = on; }
+          else keys[k] = on;
+          b.classList.toggle("on", on);
+        };
+        b.addEventListener("pointerdown", e => { e.preventDefault(); b.setPointerCapture(e.pointerId); lookUntil = 0; set(true); });
+        for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) b.addEventListener(ev, () => set(false));
+        b.addEventListener("contextmenu", e => e.preventDefault());
+      });
+      hasMouse.addEventListener("change", () => { if (!won && !p.intro) extraEl.innerHTML = controlsHint(); });
+
+      // a new window size moves everything, so measure the level again
+      let resizeTimer;
+      addEventListener("resize", () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => { buildLevel(); if (p) { p.x = Math.min(p.x, innerWidth - W); p.ground = null; } }, 200);
+      });
+
+      // start at the bottom of the page, at PRESS START
+      scrollTo(0, document.documentElement.scrollHeight);
+      spawn();
+      requestAnimationFrame(loop);
+    }
+
+    function frame() {
+      frameNo++;
+      const tt = performance.now() / 1000;
+      // slide the cards side to side
+      for (const m of movers) {
+        m.dx = Math.round(Math.sin(tt * m.speed + m.phase) * m.amp);
+        m.el.style.transform = `translateX(${m.dx}px)`;
+      }
+      // every platform top this frame, in page coordinates; `id` says which one it is
+      const sy = scrollY;
+      const list = [];
+      for (const el of plats) {
+        const r = el.getBoundingClientRect();
+        if (r.width > 0) list.push({ id: el, x1: r.left, x2: r.right, y: r.top + sy });
+      }
+      // every line of text, shifted by its card's slide
+      for (const t of textLines) {
+        const dx = t.mover ? t.mover.dx : 0;
+        list.push({ id: t, x1: t.x1 + dx, x2: t.x2 + dx, y: t.y });
+      }
+      // icons: solid blocks (their tops are platforms too)
+      const blocks = [];
+      for (const el of solids) {
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 || r.height === 0) continue;
+        const b = { id: el, x1: r.left, x2: r.right, y: r.top + sy, y2: r.bottom + sy };
+        blocks.push(b); list.push(b);
+      }
+      // the line between each pair of blocks: one-way platform pieces with gaps between them
+      // (jump up through it from below; land on a piece, or drop through a gap)
+      const lines = sectionsOf().slice(1).map(s => s.top);
+      lines.forEach((y, i) => (lineSegs[i] || []).forEach((s, j) => list.push({ id: "line" + i + "_" + j, x1: s.x1, x2: s.x2, y })));
+      const find = id => list.find(o => o.id === id);
+
+      const control = !p.intro; // no steering while leaping out of the button
+      // run: quicker on the ground, floatier in the air, slides to a stop
+      const acc = p.ground ? 0.55 : 0.35;
+      if (control && keys.left) { p.vx -= acc; p.face = -1; }
+      if (control && keys.right) { p.vx += acc; p.face = 1; }
+      if (!keys.left && !keys.right && p.ground) p.vx *= 0.82;
+      p.vx = Math.max(-MAX_RUN, Math.min(MAX_RUN, p.vx));
+      // ride a moving platform
+      if (p.ground && p.ground.id) {
+        const pl = find(p.ground.id);
+        if (pl) { p.x += pl.x1 - p.groundX; p.groundX = pl.x1; }
+      }
+      const prevX = p.x;
+      p.x += p.vx;
+
+      // walls: the screen edges...
+      const hitLeft = p.x < -INSET, hitRight = p.x > innerWidth - W + INSET;
+      if (hitLeft || hitRight) { p.x = hitLeft ? -INSET : innerWidth - W + INSET; hitWall(hitLeft ? 4 : innerWidth - 4, sy); }
+      // ...and the icons
+      if (!p.intro) {
+        const by1 = p.y + 4, by2 = p.y + H - 1;
+        for (const b of blocks) {
+          const bx1 = p.x + INSET, bx2 = p.x + W - INSET;
+          if (bx2 <= b.x1 || bx1 >= b.x2 || by2 <= b.y || by1 >= b.y2) continue;
+          const fromLeft = prevX + W / 2 < (b.x1 + b.x2) / 2;
+          p.x = fromLeft ? b.x1 - W + INSET : b.x2 - INSET;
+          hitWall(fromLeft ? b.x1 : b.x2, sy);
+        }
+      }
+
+      // jumping: a short input buffer and a few frames of grace after leaving a ledge
+      if (keys.pressed) { if (control) p.buffer = 6; keys.pressed = false; }
+      if (p.ground) p.coyote = 6; else if (p.coyote > 0) p.coyote--;
+      if (p.buffer > 0) {
+        if (p.coyote > 0) {
+          p.vy = -(11 + Math.abs(p.vx) * 0.95); // momentum: running fast jumps higher
+          p.ground = null; p.coyote = 0; p.buffer = 0;
+          p.spin = Math.abs(p.vx) > 8.5; p.rot = 0;
+        } else if (!p.doubleUsed && p.buffer === 6) {
+          // double jump, just for fun
+          p.vy = -(10 + Math.abs(p.vx) * 0.45);
+          p.doubleUsed = true; p.buffer = 0;
+          p.spin = true; p.rot = 0;
+          puff(p.x + W / 2, p.y - sy + H, 10);
+        }
+      }
+      if (p.buffer > 0) p.buffer--;
+
+      const prevFeet = p.y + H, prevTop = p.y;
+      if (!p.ground) { p.vy = Math.min(p.vy + GRAV, MAX_FALL); p.y += p.vy; }
+      if (p.y < 0) { p.y = 0; p.vy = Math.max(0, p.vy); }
+      // bump your head on an icon from below
+      if (!p.intro && p.vy < 0) {
+        for (const b of blocks) {
+          if (p.x + W - INSET <= b.x1 || p.x + INSET >= b.x2) continue;
+          if (p.y < b.y2 && prevTop >= b.y2 - 1) { p.y = b.y2; p.vy = 0; }
+        }
+      }
+      const feet = p.y + H, c1 = p.x + W * 0.25, c2 = p.x + W * 0.75;
+      const land = () => { p.vy = 0; p.spin = false; p.doubleUsed = false; };
+
+      // holding Down drops you through whatever you're standing on (the floor still holds)
+      const dropping = keys.down && !p.intro;
+      if (dropping && p.ground && !p.ground.floor) { p.ground = null; p.vy = Math.max(p.vy, 1); }
+
+      if (p.ground) {
+        // still standing on something?
+        if (p.ground.floor) p.y = floorY() - H;
+        else {
+          const pl = find(p.ground.id);
+          if (!pl || c2 < pl.x1 || c1 > pl.x2) p.ground = null;
+          else p.y = pl.y - H;
+        }
+      } else if (p.vy >= 0) {
+        // land on the first platform top crossed this frame (they're one-way, jump up through them)
+        let best = null;
+        if (!p.intro && !dropping) {
+          for (const o of list) {
+            if (c2 >= o.x1 && c1 <= o.x2 && prevFeet <= o.y + 1 && feet >= o.y && (!best || o.y < best.y)) best = o;
+          }
+        }
+        if (best) { p.y = best.y - H; p.ground = { id: best.id }; p.groundX = best.x1; land(); }
+        else if (feet >= floorY()) {
+          p.y = floorY() - H; p.ground = { floor: true }; land();
+          if (p.intro) { p.intro = false; p.vx = 0; startTime = performance.now(); puff(p.x + W / 2, p.y - sy + H, 12); }
+        }
+      }
+
+      // standing still starts an idle animation, alternating between picking the nose and the belly button
+      const still = p.ground && !keys.left && !keys.right && Math.abs(p.vx) < 0.3;
+      p.idle = still ? p.idle + 1 : 0;
+      if (!p.idle) { p.act = null; p.nextAct = between(IDLE_FIRST); }
+      else if (!p.act && p.idle >= p.nextAct) { p.act = lastAct = lastAct === "nose" ? "belly" : "nose"; p.actT = 0; p.actLen = 180 + Math.random() * 180; }
+      if (p.act && ++p.actT > p.actLen) { p.act = null; p.nextAct = p.idle + between(IDLE_GAP); }
+
+      // ---- barrels ----
+      const nowMs = performance.now(), mid = sy + innerHeight / 2;
+      if (!won && !p.intro) {
+        lines.forEach((ly, i) => {
+          if (Math.abs(ly - mid) > innerHeight) return;                      // only lines near you
+          if (barrelNext[i] === undefined) barrelNext[i] = nowMs + 1500 + Math.random() * 2500;
+          if (nowMs < barrelNext[i] || barrels.some(b => b.line === i)) return;
+          const d = Math.random() < 0.5 ? 1 : -1;
+          barrels.push({ line: i, x: d > 0 ? -BW : innerWidth, dir: d, speed: 2.4 + Math.random(), rot: 0, drop: 0, vy: 0 });
+          barrelNext[i] = Infinity; // the next one is scheduled when this one is gone
+        });
+      }
+      if (p.hurt > 0) p.hurt--;
+      barrels = barrels.filter(b => {
+        const ly = lines[b.line];
+        if (ly === undefined) return false;
+        b.x += b.dir * b.speed; b.rot += (b.dir * b.speed) / (BW / 2);
+        const cx = b.x + BW / 2;
+        if (!b.drop && !(lineSegs[b.line] || []).some(sg => cx >= sg.x1 && cx <= sg.x2)) b.drop = 0.01; // over a gap: it falls
+        if (b.drop) { b.vy += 0.5; b.drop += b.vy; }
+        const top = ly - BW + b.drop;
+        // a rolling barrel that touches you knocks you down below its line
+        if (!b.drop && !won && !p.intro && p.hurt <= 0 &&
+            b.x < p.x + W - INSET && b.x + BW > p.x + INSET && top < p.y + H && top + BW > p.y + 4) {
+          p.y = ly + 3; p.ground = null; p.vy = 2; p.vx = b.dir * 4;
+          p.spin = true; p.rot = 0; p.doubleUsed = true; p.hurt = 70;
+          puff(p.x + W / 2, ly - sy, 14);
+        }
+        const gone = b.x < -BW * 2 || b.x > innerWidth + BW || b.drop > innerHeight;
+        if (gone) barrelNext[b.line] = nowMs + 2000 + Math.random() * 4000;
+        return !gone;
+      });
+
+      // reached the footer at the top? (fully above the line under it)
+      const fb = footer.getBoundingClientRect().bottom + sy;
+      if (!won && !p.intro && p.y + H < fb - 2) win();
+
+      if (frameNo % 10 === 0 && !won && !p.intro) {
+        const height = Math.max(0, Math.round((floorY() - (p.y + H)) / 10));
+        extraEl.innerHTML = `HEIGHT <b>${String(height).padStart(4, "0")}</b> · TIME <b>${clock(performance.now() - startTime)}</b><br>${controlsHint()}`;
+      }
+
+      // camera follows the player (unless you're scrolling around by hand); falling scrolls back down
+      if (performance.now() > lookUntil) {
+        const target = p.y + H / 2 - innerHeight * 0.55;
+        scrollTo(0, scrollY + (target - scrollY) * 0.12);
+      }
+      const sy2 = scrollY;
+
+      // section lines, in the page's current colors
+      const cs = getComputedStyle(document.body);
+      const c = { edge: cs.getPropertyValue("--win-edge").trim() };
+      lines.forEach((y, i) => drawLine(i, y, sy2, c));
+      // the barrels, rolling
+      for (const b of barrels) {
+        const by = lines[b.line] - BW + b.drop - sy2;
+        if (by < -BW || by > innerHeight + BW) continue;
+        ctx.save();
+        ctx.translate(Math.round(b.x + BW / 2), Math.round(by + BW / 2));
+        ctx.rotate(Math.round(b.rot / (Math.PI / 4)) * (Math.PI / 4)); // 8 steps keeps it pixel-crisp
+        drawRows(BARREL, PAL, -BW / 2, -BW / 2, BS);
+        ctx.restore();
+      }
+
+      // the hero
+      const vx = Math.round(p.x), vy = Math.round(p.y - sy2);
+      const running = p.ground && Math.abs(p.vx) > 0.6;
+      const rows = !p.ground ? JUMP : running ? (Math.floor(frameNo / 6) % 2 ? RUN_A : RUN_B) : IDLE;
+      heroX = vx + W / 2; heroY = vy + H / 2;
+      if (p.hurt > 0 && Math.floor(p.hurt / 5) % 2) return; // blinking after a barrel hit
+      ctx.save();
+      ctx.translate(vx + W / 2, vy + H / 2);
+      if (p.spin && !p.ground) { p.rot += 0.35 * p.face; ctx.rotate(p.rot); }
+      ctx.scale(p.face, 1);
+      drawRows(rows, PAL, -W / 2, -H / 2, S);
+      if (p.act) {
+        const px = (col, row, color) => { ctx.fillStyle = color; ctx.fillRect(-W / 2 + col * S, -H / 2 + row * S, S, S); };
+        const deep = Math.floor(p.actT / 18) % 2;
+        if (p.act === "nose") {
+          // nose-picking: the arm comes up, the finger goes in and out
+          px(9, 9, PAL.B); px(9, 8, PAL.B); px(9, 7, PAL.B);   // sleeve raised
+          px(10, 6, PAL.s); px(11, 6, PAL.s);                  // hand
+          px(10, deep ? 4 : 5, PAL.s);                         // finger
+          // every so often, a flick
+          if (p.actT % 150 === 149) {
+            particles.push({ x: vx + W / 2 + p.face * 14, y: vy + 15, vx: p.face * 2.5, vy: -2.5, g: 0.2, life: 40, color: "#8fe36a" });
+          }
+        } else {
+          // belly button: the hoodie hem lifts, the hand comes in and the finger pokes in and out
+          ctx.clearRect(-W / 2 + 9 * S, -H / 2 + 8 * S, S, 2 * S);     // the hand leaves the hip
+          for (let c = 3; c <= 6; c++) px(c, 10, PAL.d);                // the hem lifts, showing the (shaded) belly
+          px(5, 10, PAL.E);                                            // the belly button
+          px(8, 10, PAL.B);                                            // sleeve
+          if (deep) { px(7, 10, PAL.s); px(6, 10, PAL.s); px(5, 10, PAL.s); } // finger in
+          else { px(8, 11, PAL.s); px(7, 10, PAL.s); }                 // finger out
+          // every so often, a bit of lint floats away
+          if (p.actT % 170 === 169) {
+            particles.push({ x: vx + W / 2 - p.face * 2, y: vy + 31, vx: p.face * 0.6, vy: -0.4, g: -0.01, life: 70, max: 70, size: 3, fade: 1, color: "#b9b6e0" });
+          }
+        }
+      }
+      ctx.restore();
+      // dust when running fast
+      if (running && Math.abs(p.vx) > 6 && frameNo % 3 === 0) {
+        particles.push({ x: vx + W / 2 - p.face * 12, y: vy + H - 2, vx: -p.vx * 0.1, vy: -0.6, g: 0.02, life: 14, max: 14, size: 3, grow: 0.2, fade: 0.6, color: "#d9dbe8" });
+      }
+    }
+
+    // ---- one render loop; fixed 60 steps a second, so it runs the same on 60 Hz and 144+ Hz screens ----
+    const STEP = 1000 / 60;
+    let acc = 0, lastT = 0;
+    function loop(now) {
+      requestAnimationFrame(loop);
+      if (!lastT || now - lastT > 250) lastT = now - STEP; // first frame, or back from a paused tab
+      acc += now - lastT; lastT = now;
+      if (acc < STEP - 2) return; // too early for the next step
+      acc = Math.min(Math.max(0, acc - STEP), STEP);
+      ctx.clearRect(0, 0, fx.width, fx.height);
+      frame();
+      lightUp = won ? Math.min(1, lightUp + 0.012) : Math.max(0, lightUp - 0.05);
+      drawDarkness(heroX, heroY);
+      particles = particles.filter(p => p.life > 0);
+      if (particles.length > 2000) particles.splice(0, particles.length - 2000);
+      for (const p of particles) {
+        p.life--; p.vy += p.g; p.x += p.vx; p.y += p.vy;
+        if (p.grow) p.size += p.grow;
+        const s = Math.round(p.size || 3);
+        ctx.globalAlpha = p.fade ? Math.max(0, p.life / p.max) * p.fade : 1;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(Math.round(p.x - s / 2), Math.round(p.y - s / 2), s, s);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // Start once the fonts are in, so every text platform is measured at its real size
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+    const ready = () => (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => requestAnimationFrame(setup));
+    document.readyState === "complete" ? ready() : addEventListener("load", ready);
+  })();
+</script>
+</body>
+</html>
