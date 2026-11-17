@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>פורטל ההיעדרות · בעקבות Salaf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@300;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0d0c0b; --paper:#ece4d2;
+  --dim:rgba(236,228,210,.64); --line:rgba(236,228,210,.18);
+  --rust:#c9633a; --signal:#d8ff4f;
+  --serif:'Frank Ruhl Libre','David Libre','Times New Roman',serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--ink);color:var(--paper);font-family:var(--serif);overflow:hidden}
+button{font:inherit;color:inherit}
+canvas#stage{position:fixed;inset:0;display:block;touch-action:none}
+
+.hud{position:fixed;z-index:20}
+.top{top:16px;inset-inline:18px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
+.top>*{pointer-events:auto}
+.brand{font-weight:300;font-size:20px;letter-spacing:-.01em;background:rgba(13,12,11,.62);padding:6px 12px;border-radius:10px}
+.brand small{display:block;font:400 11px var(--mono);color:var(--dim);letter-spacing:.06em;margin-top:2px}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.btn{padding:8px 14px;border:1px solid var(--line);border-radius:999px;background:rgba(13,12,11,.78);cursor:pointer;font-size:15px;transition:border-color .2s,background .2s}
+.btn:hover{border-color:var(--paper)}
+.btn[aria-pressed="true"]{background:var(--paper);color:var(--ink)}
+.btn.primary{border-color:var(--signal);color:var(--signal)}
+.btn.primary:hover{background:var(--signal);color:var(--ink)}
+.depth{top:78px;inset-inline-end:18px;font:400 12px var(--mono);color:var(--paper);letter-spacing:.06em;background:rgba(13,12,11,.62);padding:3px 9px;border-radius:8px}
+.hint{top:78px;inset-inline-start:18px;font:400 11px/1.7 var(--mono);color:var(--paper);text-align:start;max-width:260px;transition:opacity 1.5s;background:rgba(13,12,11,.62);padding:6px 10px;border-radius:8px}
+.credit{bottom:18px;inset-inline-start:18px;max-width:min(620px,70vw);font:400 11px/1.6 var(--mono);color:var(--paper);background:rgba(13,12,11,.62);padding:4px 10px;border-radius:8px}
+.credit a{color:var(--paper)}
+.status{position:fixed;z-index:21;bottom:60px;inset-inline:0;margin-inline:auto;width:max-content;max-width:90vw;text-align:center;font:500 13px var(--mono);letter-spacing:.04em;color:var(--signal);pointer-events:none;opacity:0;transition:opacity .4s;background:rgba(13,12,11,.75);padding:5px 12px;border-radius:8px}
+.status.on{opacity:1}
+.status button{pointer-events:auto;margin-inline-start:10px}
+
+/* ---------- Part A modal ---------- */
+.modal{position:fixed;inset:0;z-index:50;display:none;place-items:center;padding:20px;background:rgba(5,4,4,.82)}
+.modal.open{display:grid}
+.sheet{position:relative;width:min(680px,100%);max-height:88vh;overflow:auto;background:#14120f;border:1px solid var(--line);border-radius:16px;padding:34px 36px 28px}
+.sheet h2{margin:0 0 4px;font-weight:300;font-size:30px;letter-spacing:-.01em}
+.sheet .sub{font:400 12px var(--mono);color:var(--dim);margin:0 0 22px;direction:rtl;letter-spacing:.04em}
+.sheet p{font-size:18px;line-height:1.8;margin:0 0 14px;font-weight:300}
+.sheet p b{font-weight:700;color:var(--rust)}
+.pagenote{margin-top:22px;padding:18px 20px 6px;border:1px solid var(--line);border-radius:12px;background:rgba(236,228,210,.03)}
+.pagenote p{font-size:16px;line-height:1.75}
+.sheet .actions{display:flex;gap:8px;align-items:center;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+.sheet .count{margin-inline-start:auto;font:400 12px var(--mono);color:var(--dim)}
+.x{position:absolute;top:14px;inset-inline-start:16px;border:0;background:none;font-size:26px;line-height:1;cursor:pointer;color:var(--dim)}
+.x:hover{color:var(--paper)}
+:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+@media (max-width:720px){.hint{display:none}.credit{max-width:90vw}.sheet{padding:26px 22px}}
+</style>
+</head>
+<body>
+<canvas id="stage" aria-label="ערימת תצלומים של אנשים, עם שחורים שקופים, בזום אינסופי"></canvas>
+<noscript><p style="position:fixed;inset:0;display:grid;place-items:center;background:#0d0c0b;z-index:99">העמוד דורש JavaScript.</p></noscript>
+
+<div class="hud top">
+  <div class="brand">פורטל ההיעדרות<small>בעקבות Salaf · נוף אלג'ווייסיר</small></div>
+  <div class="tools">
+    <button class="btn" id="auto" aria-pressed="false" title="רווח">צלילה אוטומטית</button>
+    <button class="btn primary" id="partA">תשובות לחלק א׳ של המטלה</button>
+  </div>
+</div>
+<div class="hud depth" id="depth"></div>
+<div class="hud hint" id="hint">גלגלת העכבר = זום<br>רווח = צלילה אוטומטית</div>
+<div class="hud credit" id="credit"></div>
+<div class="status" id="status" role="status"></div>
+
+<!-- ============ Part A ============ -->
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="sheet">
+    <button class="x" id="mClose" aria-label="סגירה">×</button>
+    <h2 id="mTitle">תגובה לעבודה: Salaf</h2>
+    <p class="sub">Nouf Aljowaysir · 2020 · חלק א׳</p>
+    <div id="partAText">
+      <p>Salaf (אבות) של נוף אלג'ווייסיר פועלת על כ-6,000 תצלומי ארכיון מאוסף הצילום האוריינטליסטי של ג'ייקובסון במוזיאון גטי. כלי זיהוי של בינה מלאכותית מסמנים את האנשים בתצלומים, והיא מוחקת אותם ומשאירה תמונות ריקות.</p>
+      <p><b>1. הארכיון:</b> תצלומים שהופקו בידי צלמים זרים, מבט קולוניאלי על המזרח. חסרים בו הנצפים עצמם: שמותיהם, קולם והזיכרון המשפחתי שלהם. החסר חוזר גם במודלים: אלגוריתמי זיהוי סיווגו את אבותיה בדרכים סטריאוטיפיות, כלומר המודלים לא למדו מעולם מבט מבפנים.</p>
+      <p><b>2. מרחב לטנטי:</b> ב-2020 העבודה אינה גנרטיבית, ולכן המרחב שנחשף הוא מרחב הסיווג של מודל הזיהוי: מה נחשב "אדם" ומה נחתך ממנו. נחשפים ההיגיון שבו מכונה רואה וההיגיון הקולוניאלי שבו הצילום נעשה. מוסתרת, במכוון, הדמות עצמה, כדי שהיעדרה תהפוך לגלויה.</p>
+      <p><b>3. אסטרטגיה:</b> סירוב שמתבצע דרך הסתרה. אין כאן גליץ': המודל פועל כרגיל, וההחלטה לסרב היא של האמנית. המחיקה מסרבת לשחזר את המבט האוריינטליסטי, והיעדרות נעשית לעמדה ולא לתקלה.</p>
+    </div>
+    <div class="pagenote" id="pageNote">
+      <p><b>לאיזו עבודה העמוד מגיב:</b> Salaf, נוף אלג'ווייסיר, 2020.</p>
+      <p><b>באיזו צורה:</b> שני מהלכים מרשימת הרעיונות בחלק ב׳: <b>החלפת ארכיון</b> ו<b>הפיכת אסטרטגיה</b>. במקום אוסף גטי, הארכיון הוא תמונות אקראיות של אנשים (דיוקנאות, קהל, קבוצות) ממאגרי תמונות חופשיים: Wikimedia Commons, Openverse ו-Art Institute of Chicago, שנאספות כל הזמן. המחיקה של Salaf, שהיא סירוב סגור, הופכת כאן לפתח: התמונות מוערמות זו על זו, וכל תמונה עוברת חיזוק קונטרסט והורדת צבע. הפיקסלים השחורים שלה שקופים, ולכן רואים דרכם את התמונה שמאחוריה, ודרכה את זו שאחריה. הזום, שנשלט בגלגלת העכבר בלבד, מגדיל את הערימה, והתמונה העליונה נאכלת בהדרגה מהכהה אל הבהיר עד שהיא נעלמת, וכך נחשפת הבאה בלי חיתוך ובלי סוף. כאן אין מודל שמזהה אנשים, וההחלטה מה נמחק עוברת מ"מי נחשב אדם" ל"מה כהה". עוצמת הקונטרסט (פי 2.6 עד 4.2), סף ה"שחור" וגודל הזום של כל שכבה נקבעים באקראי, כך שהחורים מכסים בין 10% ל-45% מכל תמונה. ההבטחה שהתמונות הן של אנשים נשענת על מילות החיפוש בלבד, ולכן לפעמים תופיע תמונה בלי אדם.</p>
+    </div>
+    <div class="actions">
+      <button class="btn" id="copyA">העתקת הטקסט</button>
+      <span class="count" id="wc"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* =====================================================================
+   פורטל ההיעדרות — בעקבות Salaf (Nouf Aljowaysir, 2020)
+   כל תמונה: חיזוק קונטרסט, הורדת צבע, והשחורים הופכים למסכה
+   שדרכה רואים את התמונה הבאה. צוללים פנימה בלי תחתית.
+   ===================================================================== */
+
+const $ = s => document.querySelector(s);
+const rnd = Math.random;
+const rrange = (a, b) => a + (b - a) * rnd();
+const pick = a => a[Math.floor(rnd() * a.length)];
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+
+/* ---- affine matrices [a,b,c,d,e,f]; mul(m,n) = apply n, then m ---- */
+const mul = (m, n) => [
+  m[0]*n[0] + m[2]*n[1], m[1]*n[0] + m[3]*n[1],
+  m[0]*n[2] + m[2]*n[3], m[1]*n[2] + m[3]*n[3],
+  m[0]*n[4] + m[2]*n[5] + m[4], m[1]*n[4] + m[3]*n[5] + m[5]];
+const Tr = (x, y) => [1, 0, 0, 1, x, y];
+const Sc = s => [s, 0, 0, s, 0, 0];
+const Ro = a => { const c = Math.cos(a), s = Math.sin(a); return [c, s, -s, c, 0, 0]; };
+
+/* ---------------------------------------------------------------------
+   שאילתות חיפוש של אנשים (people / person / portrait / crowd ומילים תואמות)
+   --------------------------------------------------------------------- */
+const QUERIES = [
+  'portrait photograph person', 'portrait of a man', 'portrait of a woman', 'group portrait people',
+  'people crowd photograph', 'crowd of people', 'street people photograph', 'people walking street',
+  'family portrait photograph', 'children portrait photograph', 'workers group photograph',
+  'people market photograph', 'person standing photograph', 'people gathering photograph',
+  'incategory:"Portrait photographs"', 'incategory:"Crowds"', 'incategory:"People"', 'incategory:"Group portraits"'
+];
+
+/* ---------------------------------------------------------------------
+   מצב כללי
+   --------------------------------------------------------------------- */
+const canvas = $('#stage');
+const gl = canvas.getContext('webgl', { alpha: false, antialias: false, premultipliedAlpha: false });
+if (!gl) { document.body.insertAdjacentHTML('beforeend', '<p style="position:fixed;inset:0;display:grid;place-items:center;background:#0d0c0b;z-index:99;margin:0">הדפדפן לא תומך ב-WebGL, שהעמוד דורש.</p>'); return; }
+let DPR = 1, VW = 0, VH = 0;
+const levels = new Map();
+const used = new Set();
+const searchCache = new Map();
+let highest = -1, building = false, fails = 0, retryAt = 0;
+let Z = 0, targetZ = 0, auto = false, modalOpen = false;
+const NL = 6;                    // כמה שכבות מצוירות בבת אחת (הנוכחית וחמש שמאחוריה)
+const AHEAD = NL - 1;            // כמה רמות קדימה נאספות כל הזמן
+const WHEEL_K = .0018;           // רגישות הגלגלת
+const AUTO_SPEED = 0.22;          // יחידות זום לוגריתמי לשנייה: מהירות אחידה בכל הרמות
+
+function resize() {
+  DPR = Math.min(1.5, window.devicePixelRatio || 1);   // מוגבל ליציבות הגלילה
+  VW = window.innerWidth; VH = window.innerHeight;
+  canvas.width = Math.round(VW * DPR); canvas.height = Math.round(VH * DPR);
+  canvas.style.width = VW + 'px'; canvas.style.height = VH + 'px';
+}
+addEventListener('resize', resize); resize();
+
+/* =====================================================================
+   מאגרי תמונות חופשיים. לכל מאגר פונקציית search שמחזירה מועמדים אחידים:
+   { id, url, pageUrl, title, artist, license, source }
+   מאגר שנכשל שוב ושוב מושבת, והשאר ממשיכים.
+   ===================================================================== */
+const textOnly = html => {
+  if (!html) return '';
+  const d = new DOMParser().parseFromString(String(html), 'text/html');
+  d.querySelectorAll('script,style').forEach(n => n.remove());
+  return (d.body.textContent || '').replace(/\s+/g, ' ').trim();
+};
+async function getJSON(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + url.split('?')[0]);
+  return r.json();
+}
+const tidy = (s, n = 90) => (textOnly(s) || '').slice(0, n);
+
+const SOURCES = [
+  { id: 'commons', label: 'Wikimedia Commons', weight: 5, fails: 0, queries: QUERIES,
+    async search(q) {
+      const offset = 20 * Math.floor(rnd() * 6);
+      const p = new URLSearchParams({
+        action: 'query', generator: 'search', gsrsearch: q + ' filetype:bitmap',
+        gsrnamespace: '6', gsrlimit: '20', gsroffset: String(offset),
+        prop: 'imageinfo', iiprop: 'url|size|mime|extmetadata', iiurlwidth: '1280',
+        iiextmetadatafilter: 'ObjectName|Artist|LicenseShortName|Credit', format: 'json', origin: '*' });
+      const j = await getJSON('https://commons.wikimedia.org/w/api.php?' + p.toString());
+      const pages = j && j.query && j.query.pages ? Object.values(j.query.pages) : [];
+      const out = [];
+      for (const pg of pages) {
+        const ii = pg.imageinfo && pg.imageinfo[0];
+        if (!ii || !/^image\/(jpeg|png)$/.test(ii.mime)) continue;
+        const url = ii.thumburl || ii.url, w = ii.thumbwidth || ii.width, h = ii.thumbheight || ii.height;
+        if (!url || Math.min(w, h) < 420) continue;
+        const m = ii.extmetadata || {};
+        out.push({ id: 'c:' + pg.title, url, pageUrl: ii.descriptionurl,
+          title: tidy(m.ObjectName && m.ObjectName.value) || pg.title.replace(/^File:/, '').replace(/\.[a-z]+$/i, ''),
+          artist: tidy((m.Artist && m.Artist.value) || (m.Credit && m.Credit.value)), license: tidy(m.LicenseShortName && m.LicenseShortName.value) });
+      }
+      return out;
+    } },
+
+  { id: 'openverse', label: 'Openverse', weight: 3, fails: 0,
+    queries: ['portrait person', 'people crowd', 'group of people', 'street people', 'portrait of a man', 'portrait of a woman', 'family portrait', 'children people', 'people walking', 'crowd'],
+    async search(q) {
+      const page = 1 + Math.floor(rnd() * 5);
+      const url = 'https://api.openverse.org/v1/images/?' + new URLSearchParams({ q, category: 'photograph', page_size: '20', page: String(page) });
+      const j = await getJSON(url).catch(() => getJSON(url.replace(/page=\d+/, 'page=1')));   // עמוד מחוץ לטווח: חוזרים לראשון
+      return (j.results || []).filter(r => r.thumbnail || r.url).map(r => ({
+        id: 'o:' + r.id, url: r.thumbnail || r.url, pageUrl: r.foreign_landing_url || r.url,
+        title: tidy(r.title) || 'Untitled', artist: tidy(r.creator),
+        license: ((r.license || '').toUpperCase() + ' ' + (r.license_version || '')).trim() }));
+    } },
+
+  { id: 'aic', label: 'Art Institute of Chicago', weight: 2, fails: 0,
+    queries: ['portrait', 'portrait of a man', 'portrait of a woman', 'group of people', 'figures crowd', 'family', 'people', 'self-portrait'],
+    async search(q) {
+      const page = 1 + Math.floor(rnd() * 25);
+      const url = 'https://api.artic.edu/api/v1/artworks/search?' + new URLSearchParams({ q, 'query[term][is_public_domain]': 'true',
+        fields: 'id,title,image_id,artist_title,date_display', limit: '20', page: String(page) });
+      const j = await getJSON(url);
+      return (j.data || []).filter(a => a.image_id).map(a => ({
+        id: 'a:' + a.id, url: `https://www.artic.edu/iiif/2/${a.image_id}/full/843,/0/default.jpg`,
+        pageUrl: 'https://www.artic.edu/artworks/' + a.id,
+        title: tidy(a.title) + (a.date_display ? ' (' + tidy(a.date_display, 20) + ')' : ''), artist: tidy(a.artist_title), license: 'CC0 · Public Domain' }));
+    } }
+];
+
+function pickSource() {
+  let live = SOURCES.filter(s => s.fails < 4);
+  if (!live.length) { SOURCES.forEach(s => { s.fails = 2; }); live = SOURCES.slice(); }   // מאגר מושבת מקבל הזדמנות חדשה
+  let roll = rnd() * live.reduce((t, s) => t + s.weight, 0);
+  for (const s of live) { roll -= s.weight; if (roll <= 0) return s; }
+  return live[0];
+}
+
+async function nextCandidate(recycled) {
+  let lastErr = null;
+  for (let attempt = 0; attempt < 9; attempt++) {
+    const src = pickSource();
+    const q = pick(src.queries);
+    const key = src.id + '|' + q + '|' + Math.floor(rnd() * 4);          // כמה תוצאות שונות לאותה שאילתה
+    let items = searchCache.get(key);
+    if (!items) {
+      try { items = await src.search(q); src.fails = items.length ? 0 : src.fails + .5; }
+      catch (e) { lastErr = e; src.fails++; items = []; console.warn(src.id, e.message); }
+      if (items.length) searchCache.set(key, items);
+    }
+    const fresh = items.filter(i => !used.has(i.id));
+    if (fresh.length) { const it = pick(fresh); used.add(it.id); it.source = src; return it; }
+  }
+  if (!recycled && used.size) { used.clear(); return nextCandidate(true); }
+  throw lastErr || new Error('no-candidates');
+}
+
+function loadImage(url) {
+  return new Promise((res, rej) => {
+    const im = new Image(); im.crossOrigin = 'anonymous'; im.decoding = 'async';
+    im.onload = () => (im.decode ? im.decode().then(() => res(im), () => res(im)) : res(im)); im.onerror = () => rej(new Error('image-load'));
+    im.src = url;
+  });
+}
+
+/* =====================================================================
+   WebGL: כל התמונות מוערמות זו על זו ומורכבות בשיידר אחד.
+   לכל שכבה: קונטרסט חזק ← אפור ← הפיקסלים השחורים שקופים, כך שרואים דרכם את השכבה שמאחוריה.
+   ===================================================================== */
+const VERT = 'attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}';
+let FRAG = 'precision highp float;uniform vec2 u_res;uniform vec4 u_a[' + NL + '];uniform vec4 u_b[' + NL + '];uniform vec2 u_c[' + NL + '];\n';
+for (let i = 0; i < NL; i++) FRAG += 'uniform sampler2D u_t' + i + ';\n';
+FRAG += 'void main(){\n vec2 p=vec2(gl_FragCoord.x-.5*u_res.x,.5*u_res.y-gl_FragCoord.y);\n vec3 col=vec3(.051,.047,.043);\n';
+for (let i = NL - 1; i >= 0; i--) FRAG += ` if(u_a[${i}].w>.5){
+  vec2 sz=u_a[${i}].yz; vec2 uv=(p/u_a[${i}].x+.5*sz-u_b[${i}].xy)/sz;
+  if(uv.x>=0.&&uv.x<=1.&&uv.y>=0.&&uv.y<=1.){
+   float l=dot(texture2D(u_t${i},uv).rgb,vec3(.2126,.7152,.0722));
+   float gr=.5+(l-u_b[${i}].w)*u_b[${i}].z;
+   col=mix(col,vec3(clamp(gr,0.,1.)),smoothstep(u_c[${i}].x,u_c[${i}].x+u_c[${i}].y,gr));
+  } }
+`;
+FRAG += ' gl_FragColor=vec4(col,1.);\n}';
+function shader(type, src) { const sh = gl.createShader(type); gl.shaderSource(sh, src); gl.compileShader(sh); if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh)); return sh; }
+const prog = gl.createProgram();
+gl.attachShader(prog, shader(gl.VERTEX_SHADER, VERT)); gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, FRAG));
+gl.linkProgram(prog); gl.useProgram(prog);
+const quad = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+const aLoc = gl.getAttribLocation(prog, 'a'); gl.enableVertexAttribArray(aLoc); gl.vertexAttribPointer(aLoc, 2, gl.FLOAT, false, 0, 0);
+const U = { res: gl.getUniformLocation(prog, 'u_res'), a: gl.getUniformLocation(prog, 'u_a'), b: gl.getUniformLocation(prog, 'u_b'), c: gl.getUniformLocation(prog, 'u_c') };
+for (let i = 0; i < NL; i++) gl.uniform1i(gl.getUniformLocation(prog, 'u_t' + i), i);
+function newTexture() {
+  const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  return t;
+}
+const dummyTex = newTexture(); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
+const MAXTEX = Math.min(2048, gl.getParameter(gl.MAX_TEXTURE_SIZE));
+
+/* =====================================================================
+   רמה = תמונה + פרמטרים אקראיים של המסכה
+   ===================================================================== */
+function makeLevel(im, cand, index) {
+  let src = im, W = im.naturalWidth, H = im.naturalHeight;
+  if (Math.max(W, H) > MAXTEX) {                                    // תמונה גדולה מדי למרקם: מקטינים
+    const k = MAXTEX / Math.max(W, H), c = mk(Math.round(W * k), Math.round(H * k));
+    c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); src = c; W = c.width; H = c.height;
+  }
+  // דגימה קטנה לסטטיסטיקה: חציון הבהירות, וסף "שחור" אקראי שמכסה בין 10% ל-45% מהתמונה
+  const sw = 64, sh = Math.max(8, Math.round(64 * H / W)), sc = mk(sw, sh), sx = sc.getContext('2d', { willReadFrequently: true });
+  sx.drawImage(im, 0, 0, sw, sh);
+  const px = sx.getImageData(0, 0, sw, sh).data, n = sw * sh, lum = new Uint8Array(n), lh = new Uint32Array(256);
+  for (let i = 0, j = 0; i < n; i++, j += 4) { const l = (0.2126 * px[j] + 0.7152 * px[j + 1] + 0.0722 * px[j + 2]) | 0; lum[i] = l; lh[l]++; }
+  let c = 0, median = 0; for (let v = 0; v < 256; v++) { c += lh[v]; if (c >= n / 2) { median = v; break; } }
+  const gain = rrange(2.6, 4.2), gh = new Uint32Array(256);
+  for (let i = 0; i < n; i++) gh[clamp(128 + (lum[i] - median) * gain, 0, 255) | 0]++;
+  const share = v => { let s2 = 0; for (let k = 0; k <= v; k++) s2 += gh[k]; return s2 / n; };
+  let thr = rrange(24, 56);
+  while (thr > 4 && share(thr) > .45) thr--;
+  while (thr < 140 && share(thr) < .10) thr++;
+
+  const tex = newTexture();
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
+  const f = rrange(1.35, 1.7);                                      // כמה הזום מגדיל את הערימה בזמן שהשכבה הזו למעלה
+  const meta = { title: cand.title, artist: cand.artist, license: cand.license, pageUrl: cand.pageUrl, source: cand.source.label };
+  return { index, W, H, tex, meta, gain, med: median / 255, thr: thr / 255, soft: 12 / 255, f, span: Math.log(f), off: 0, m0: 1, rx: rrange(-.8, .8), ry: rrange(-.8, .8) };
+}
+
+async function buildLevel(index) {
+  for (let tries = 0; tries < 8; tries++) {
+    const cand = await nextCandidate();
+    let im;
+    try { im = await loadImage(cand.url); cand.source.fails = 0; } catch (e) { cand.source.fails += .5; continue; }
+    if (im.naturalWidth < 200 || im.naturalHeight < 200) continue;
+    return makeLevel(im, cand, index);
+  }
+  throw new Error('no-image');
+}
+
+/* =====================================================================
+   צנרת הרמות והזום
+   ציר הזום Z הוא לוגריתמי. ברמה k (העליונה) מתקיים u = Z - off.
+   העליונה גדלה ב-e^u, זו שמאחוריה גדלה מ-1 ל-f (ובכך מתחלפת בה), והשאר ברוחב מסך.
+   בסוף השלב העליונה נאכלת לגמרי (הסף עולה מהכהה לבהיר), ולכן אין חיתוך כשהיא יוצאת.
+   ===================================================================== */
+const lowest = () => { let m = Infinity; for (const k of levels.keys()) m = Math.min(m, k); return m === Infinity ? 0 : m; };
+function attach(P, N) { N.off = P.off + P.span; N.m0 = P.f; }
+
+function locate(zv) {
+  const ks = [...levels.keys()].sort((a, b) => a - b);
+  if (!ks.length) return { k: 0, t: 0 };
+  for (let i = 0; i < ks.length; i++) {
+    const L = levels.get(ks[i]);
+    if (i === ks.length - 1 || zv < L.off + L.span) return { k: ks[i], t: clamp((zv - L.off) / L.span, 0, 1) };
+  }
+}
+
+const needMore = () => highest < 0 || highest < locate(Z).k + AHEAD;
+async function pump() {
+  if (building) return;
+  building = true;
+  try {
+    const lv = await buildLevel(highest + 1);
+    if (highest < 0) { lv.off = 0; lv.m0 = 1; Z = targetZ = 0; } else attach(levels.get(highest), lv);
+    levels.set(lv.index, lv); highest = lv.index; fails = 0; retryAt = 0;
+    const kk = locate(Z).k;
+    for (const [k, v] of [...levels]) if (k < kk - 2) { levels.delete(k); gl.deleteTexture(v.tex); }
+    updateHud(true);
+  } catch (e) {
+    fails++; retryAt = performance.now() + Math.min(6000, 700 * fails); console.warn('build failed', e);
+  } finally { building = false; }
+}
+
+/* =====================================================================
+   ציור
+   ===================================================================== */
+const A = new Float32Array(NL * 4), B = new Float32Array(NL * 4), C = new Float32Array(NL * 2);
+function render() {
+  gl.viewport(0, 0, canvas.width, canvas.height); gl.uniform2f(U.res, canvas.width, canvas.height);
+  if (highest < 0) { gl.clearColor(.051, .047, .043, 1); gl.clear(gl.COLOR_BUFFER_BIT); return; }
+  const { k, t } = locate(Z), R = levels.get(k), u = Z - R.off;
+  for (let j = 0; j < NL; j++) {
+    const L = levels.get(k + j);
+    gl.activeTexture(gl.TEXTURE0 + j); gl.bindTexture(gl.TEXTURE_2D, L ? L.tex : dummyTex);
+    if (!L) { A[j * 4 + 3] = 0; continue; }
+    const m = j === 0 ? L.m0 * Math.exp(u) : j === 1 ? Math.exp(u) : 1;
+    const cover = Math.max(VW / L.W, VH / L.H);
+    const slackX = Math.max(0, (L.W - VW / cover) / 2), slackY = Math.max(0, (L.H - VH / cover) / 2);
+    A[j * 4] = m * cover * DPR; A[j * 4 + 1] = L.W; A[j * 4 + 2] = L.H; A[j * 4 + 3] = 1;
+    B[j * 4] = L.rx * slackX; B[j * 4 + 1] = L.ry * slackY; B[j * 4 + 2] = L.gain; B[j * 4 + 3] = L.med;
+    // העליונה נאכלת מהכהה אל הבהיר ב-70% האחרונים של השלב, עד שאין בה אף פיקסל אטום (הערך נמדד לפני החיתוך ל-0..1, כדי שגם הלבנים הרוויים ייעלמו בהדרגה)
+    const endThr = .5 + (1 - L.med) * L.gain + L.soft + .02;          // מעל הערך הגבוה ביותר האפשרי: לא נשאר פיקסל אטום
+    C[j * 2] = j === 0 ? L.thr + (endThr - L.thr) * smooth(.3, 1, t) : L.thr; C[j * 2 + 1] = L.soft;
+  }
+  gl.uniform4fv(U.a, A); gl.uniform4fv(U.b, B); gl.uniform2fv(U.c, C);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
+
+/* =====================================================================
+   ממשק
+   ===================================================================== */
+let statusTimer = 0, statusMsg = '';
+function setStatus(msg) {
+  if (msg === statusMsg) return; statusMsg = msg;
+  const el = $('#status'); el.textContent = msg; el.classList.toggle('on', !!msg);
+}
+
+let hudKey = -1;
+function updateHud(force) {
+  if (highest < 0) return;
+  const { k, t } = locate(Z), idx = t > .5 && levels.has(k + 1) ? k + 1 : k, L = levels.get(idx); if (!L) return;
+  if (!force && idx === hudKey) return; hudKey = idx;
+  const m = L.meta, c = $('#credit');
+  $('#depth').textContent = 'עומק ' + idx;
+  c.textContent = '';
+  c.append('תמונה: ' + m.title + (m.artist ? ' · ' + m.artist.slice(0, 70) : '') + (m.license ? ' · ' + m.license : '') + ' · ');
+  const a = document.createElement('a'); a.href = m.pageUrl; a.target = '_blank'; a.rel = 'noopener'; a.textContent = m.source; c.appendChild(a);
+}
+
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (!building && now >= retryAt && needMore()) pump();                // אוספים תמונות כל הזמן, גם בזמן הצלילה
+  let zmax = 0;
+  if (highest >= 0) {
+    const zmin = levels.get(lowest()).off; zmax = levels.get(highest).off;
+    if (auto && !modalOpen) targetZ += dt * AUTO_SPEED;
+    targetZ = clamp(targetZ, zmin, zmax);
+    Z += (targetZ - Z) * (1 - Math.exp(-dt * 9)); Z = clamp(Z, zmin, zmax);
+    render(); updateHud();
+  }
+  setStatus(fails >= 3 ? 'מתקשה להתחבר למאגרי התמונות, ממשיך לנסות…'
+    : highest < 0 ? 'מחפש תמונה…'
+    : (building && targetZ >= zmax - .02) ? 'מחפש את התמונה הבאה…' : '');
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* =====================================================================
+   קלט: גלגלת העכבר בלבד (בלי גרירה)
+   ===================================================================== */
+addEventListener('wheel', e => {
+  if (modalOpen) return; e.preventDefault();
+  const dy = clamp(e.deltaY * (e.deltaMode === 1 ? 33 : 1), -240, 240);
+  targetZ += -dy * WHEEL_K;
+}, { passive: false });
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModal(); return; }
+  if (modalOpen) return;
+  if (e.key === ' ') { e.preventDefault(); toggleAuto(); }
+});
+function toggleAuto(v) { auto = v === undefined ? !auto : v; $('#auto').setAttribute('aria-pressed', auto ? 'true' : 'false'); }
+$('#auto').addEventListener('click', e => { toggleAuto(); e.currentTarget.blur(); });
+/* =====================================================================
+   חלק א׳ של המטלה
+   ===================================================================== */
+const modal = $('#modal');
+function openModal() {
+  modalOpen = true; modal.classList.add('open');
+  $('#wc').textContent = 'התשובה לחלק א׳: ' + $('#partAText').innerText.trim().split(/\s+/).filter(Boolean).length + ' מילים';
+  $('#mClose').focus();
+}
+function closeModal() { if (!modalOpen) return; modalOpen = false; modal.classList.remove('open'); }
+$('#partA').addEventListener('click', openModal);
+$('#mClose').addEventListener('click', closeModal);
+modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+$('#copyA').addEventListener('click', async () => {
+  const txt = $('#partAText').innerText.trim() + '\n\n' + $('#pageNote').innerText.trim(), b = $('#copyA');
+  try { await navigator.clipboard.writeText(txt); b.textContent = 'הועתק ✓'; }
+  catch (e) { const r = document.createRange(); r.selectNodeContents($('#partAText')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = 'סומן, אפשר להעתיק'; }
+  setTimeout(() => { b.textContent = 'העתקת הטקסט'; }, 2200);
+});
+
+/* =====================================================================
+   התחלה: בלי מסך פתיחה ובלי מודל, נכנסים ישר
+   ===================================================================== */
+setTimeout(() => { $('#hint').style.opacity = 0; }, 9000);
+})();
+</script>
+</body>
+</html>
